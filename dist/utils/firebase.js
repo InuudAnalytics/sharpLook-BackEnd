@@ -3,11 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// src/utils/firebase.ts
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
-// Ensure the Firebase app is only initialized once
+const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+if (!raw) {
+    throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable');
+}
+// Re-parse and fix \n newlines in private key
+const serviceAccount = JSON.parse(raw);
+if (typeof serviceAccount.private_key === 'string') {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+}
 if (!firebase_admin_1.default.apps.length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
     firebase_admin_1.default.initializeApp({
         credential: firebase_admin_1.default.credential.cert(serviceAccount),
     });

@@ -1,10 +1,18 @@
-// src/utils/firebase.ts
 import admin from 'firebase-admin';
 
-// Ensure the Firebase app is only initialized once
-if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON as string);
+const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
+if (!raw) {
+  throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable');
+}
+
+// Re-parse and fix \n newlines in private key
+const serviceAccount = JSON.parse(raw);
+if (typeof serviceAccount.private_key === 'string') {
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+}
+
+if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
