@@ -28,67 +28,61 @@ class WithdrawalService {
         if (!wallet || wallet.balance < amount) {
             throw new Error("Insufficient wallet balance");
         }
-        console.log("wallet dey here", wallet);
-        // Fetch Vendor Commission Setting
-        const vendorCommission = await prisma_1.default.vendorCommissionSetting.findUnique({
-            where: { userId },
-        });
+        const vendorCommission = await prisma_1.default.vendorCommissionSetting.findUnique({ where: { userId } });
         let platformFee = 0;
         if (vendorCommission) {
             const now = new Date();
-            const onboardingDate = user.createdAt; // Assuming createdAt is the onboarding date
-            const timeElapsed = now.getTime() - onboardingDate.getTime();
-            let shouldDeductCommission = false;
-            switch (vendorCommission.deductionStart) {
-                case "AFTER_FIRST_WEEK":
-                    shouldDeductCommission = timeElapsed >= 7 * 24 * 60 * 60 * 1000;
-                    break;
-                case "AFTER_SECOND_WEEK":
-                    shouldDeductCommission = timeElapsed >= 14 * 24 * 60 * 60 * 1000;
-                    break;
-                case "AFTER_FIRST_MONTH":
-                    shouldDeductCommission = timeElapsed >= 30 * 24 * 60 * 60 * 1000;
-                    break;
-            }
-            if (shouldDeductCommission) {
+            const timeElapsed = now.getTime() - user.createdAt.getTime();
+            const shouldDeduct = {
+                AFTER_FIRST_WEEK: 7,
+                AFTER_SECOND_WEEK: 14,
+                AFTER_FIRST_MONTH: 30,
+            }[vendorCommission.deductionStart] ?? 0;
+            if (timeElapsed >= shouldDeduct * 24 * 60 * 60 * 1000) {
                 platformFee = amount * vendorCommission.commissionRate;
             }
         }
         const payoutAmount = amount - platformFee;
-        if (payoutAmount <= 0) {
-            throw new Error("Payout amount is too low after deducting platform fee.");
-        }
-        // Step 1: Create recipient
-        // Step 1: Create recipient
+        if (payoutAmount <= 0)
+            throw new Error("Payout too small after fees.");
         const recipientCode = await (0, paystack_1.createTransferRecipient)(resolvedAccountName, bankAccountNumber, bankCode);
+        await (0, wallet_service_1.debitWallet)(wallet.id, payoutAmount, reason, (0, exports.generateReferralReference)());
+        let transfer;
+        let transferError = null;
         try {
-            await (0, wallet_service_1.debitWallet)(wallet.id, payoutAmount, "Wallet Withdrawal", (0, exports.generateReferralReference)());
+            transfer = await (0, paystack_1.sendTransfer)(payoutAmount, recipientCode, reason, { userId });
         }
-        catch (error) {
-            console.error("Failed to debit wallet:", error);
-            throw error;
+        catch (err) {
+            transferError = err;
+            console.error("❌ Transfer error:", err?.response?.data || err.message || err);
+            // fallback transfer data if timeout or 5xx error
+            transfer = {
+                reference: `failed-${Date.now()}`,
+                status: 'pending',
+                reason: 'Transfer initiated but failed or timed out',
+            };
         }
-        // Step 3: Initiate Transfer for payoutAmount
-        const transfer = await (0, paystack_1.sendTransfer)(payoutAmount, recipientCode, reason, { userId });
-        // Step 4: Store Withdrawal Record
         const withdrawal = await prisma_1.default.withdrawalRequest.create({
             data: {
                 userId,
                 amount: payoutAmount,
                 reason,
                 method: "paystack",
-                status: transfer.status === "success" ? client_1.WithdrawalStatus.PAID : client_1.WithdrawalStatus.PENDING,
+                status: transfer.status === "success"
+                    ? client_1.WithdrawalStatus.PAID
+                    : client_1.WithdrawalStatus.PENDING,
                 metadata: {
                     originalAmount: amount,
                     platformFee,
                     transferDetails: transfer,
+                    transferError: transferError?.response?.data || null,
                 },
-                createdAt: new Date(),
-                updatedAt: new Date(),
             },
         });
         return {
-            message: transfer.status === "success" ? "Withdrawal successful" : "Withdrawal processing",
+            message: transfer.status === "success"
+                ? "Withdrawal successful"
+                : "Withdrawal is being processed",
             withdrawal,
             paystackReference: transfer.reference,
             transferStatus: transfer.status,

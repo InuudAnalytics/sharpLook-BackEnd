@@ -60,24 +60,6 @@ const getBanks = async () => {
     return response.data.data; // Array of { name, code, slug }
 };
 exports.getBanks = getBanks;
-/**
- * ✅ Resolve a Bank Account
- */
-// export const resolveAccount = async (accountNumber: string, bankCode: string) => {
-//   const response = await axios.get(`${PAYSTACK_BASE}/bank/resolve`, {
-//     headers: {
-//       Authorization: `Bearer ${PAYSTACK_SECRET}`,
-//     },
-//     params: {
-//       account_number: accountNumber,
-//       bank_code: bankCode,
-//     },
-//   });
-//   return response.data.data; // { account_name, account_number, bank_id }
-// };
-/**
- * ✅ Create a Transfer Recipient
- */
 const createTransferRecipient = async (name, accountNumber, bankCode) => {
     const response = await axios_1.default.post(`${PAYSTACK_BASE}/transferrecipient`, {
         type: "nuban",
@@ -96,19 +78,36 @@ exports.createTransferRecipient = createTransferRecipient;
 /**
  * ✅ Trigger Auto Withdrawal (Transfer)
  */
-const sendTransfer = async (amount, recipientCode, reason, metadata = {}) => {
-    const response = await axios_1.default.post(`${PAYSTACK_BASE}/transfer`, {
+const sendTransfer = async (amount, recipientCode, reason, metadata = {}, retries = 2) => {
+    const payload = {
         source: "balance",
-        amount: amount * 100, // in kobo
+        amount: amount * 100,
         recipient: recipientCode,
         reason,
         metadata,
-    }, {
-        headers: {
-            Authorization: `Bearer ${PAYSTACK_SECRET}`,
-            "Content-Type": "application/json",
-        },
-    });
-    return response.data.data; // contains status, transfer_code, reference
+    };
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const response = await axios_1.default.post(`${PAYSTACK_BASE}/transfer`, payload, {
+                headers: {
+                    Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                    "Content-Type": "application/json",
+                },
+                timeout: 10000, // 10s timeout
+            });
+            return response.data.data;
+        }
+        catch (err) {
+            if (i === retries || !isRetryablePaystackError(err)) {
+                throw err;
+            }
+            console.warn(`⚠️ Retry transfer attempt ${i + 1}...`);
+            await new Promise((r) => setTimeout(r, 2000));
+        }
+    }
 };
 exports.sendTransfer = sendTransfer;
+const isRetryablePaystackError = (err) => {
+    const code = err?.response?.status;
+    return code === 502 || code === 503 || code === 504 || err.code === 'ECONNABORTED';
+};

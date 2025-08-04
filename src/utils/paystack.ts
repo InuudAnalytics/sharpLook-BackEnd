@@ -76,26 +76,7 @@ export const getBanks = async () => {
   return response.data.data; // Array of { name, code, slug }
 };
 
-/**
- * ✅ Resolve a Bank Account
- */
-// export const resolveAccount = async (accountNumber: string, bankCode: string) => {
-//   const response = await axios.get(`${PAYSTACK_BASE}/bank/resolve`, {
-//     headers: {
-//       Authorization: `Bearer ${PAYSTACK_SECRET}`,
-//     },
-//     params: {
-//       account_number: accountNumber,
-//       bank_code: bankCode,
-//     },
-//   });
 
-//   return response.data.data; // { account_name, account_number, bank_id }
-// };
-
-/**
- * ✅ Create a Transfer Recipient
- */
 export const createTransferRecipient = async (
   name: string,
   accountNumber: string,
@@ -127,26 +108,46 @@ export const sendTransfer = async (
   amount: number,
   recipientCode: string,
   reason: string,
-  metadata: any = {}
+  metadata: any = {},
+  retries = 2
 ) => {
-  const response = await axios.post(
-    `${PAYSTACK_BASE}/transfer`,
-    {
-      source: "balance",
-      amount: amount * 100, // in kobo
-      recipient: recipientCode,
-      reason,
-      metadata,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const payload = {
+    source: "balance",
+    amount: amount * 100,
+    recipient: recipientCode,
+    reason,
+    metadata,
+  };
 
-  return response.data.data; // contains status, transfer_code, reference
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await axios.post(
+        `${PAYSTACK_BASE}/transfer`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 10000, // 10s timeout
+        }
+      );
+
+      return response.data.data;
+    } catch (err: any) {
+      if (i === retries || !isRetryablePaystackError(err)) {
+        throw err;
+      }
+
+      console.warn(`⚠️ Retry transfer attempt ${i + 1}...`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+};
+
+const isRetryablePaystackError = (err: any) => {
+  const code = err?.response?.status;
+  return code === 502 || code === 503 || code === 504 || err.code === 'ECONNABORTED';
 };
 
 
