@@ -120,7 +120,8 @@ const getMyBookings = async (req, res) => {
 };
 exports.getMyBookings = getMyBookings;
 const changeBookingStatus = async (req, res) => {
-    const { status, completedBy, reference, bookingId } = req.body;
+    const { bookingId } = req.params;
+    const { status, completedBy, reference } = req.body;
     try {
         const booking = await BookingService.getBookingById(bookingId);
         if (!booking) {
@@ -187,18 +188,9 @@ const changeBookingStatus = async (req, res) => {
 };
 exports.changeBookingStatus = changeBookingStatus;
 const markBookingCompletedByClient = async (req, res) => {
-    const { reference, bookingId } = req.body;
-    const userId = req.user.id;
+    const { reference } = req.body;
     try {
-        const updatedBooking = await BookingService.markBookingCompletedByClient(bookingId, reference);
-        await (0, notification_service_1.createNotification)(userId, `You have successfully marked a booking as completed.`);
-        const user = await prisma_1.default.user.findUnique({
-            where: { id: userId },
-            select: { fcmToken: true },
-        });
-        if (user?.fcmToken) {
-            await pushNotifications_service_1.pushNotificationService.sendPushNotification(user.fcmToken, 'Booking Completed', `You have successfully marked a booking as completed.`);
-        }
+        const updatedBooking = await BookingService.markBookingCompletedByClient(req.params.bookingId, reference);
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by client.",
@@ -211,18 +203,9 @@ const markBookingCompletedByClient = async (req, res) => {
 };
 exports.markBookingCompletedByClient = markBookingCompletedByClient;
 const markBookingCompletedByVendor = async (req, res) => {
-    const { reference, bookingId } = req.body;
-    const userId = req.user.id;
+    const { reference } = req.body;
     try {
-        const updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
-        await (0, notification_service_1.createNotification)(userId, `You have successfully marked a booking as completed.`);
-        const user = await prisma_1.default.user.findUnique({
-            where: { id: userId },
-            select: { fcmToken: true },
-        });
-        if (user?.fcmToken) {
-            await pushNotifications_service_1.pushNotificationService.sendPushNotification(user.fcmToken, 'Booking Completed', `You have successfully marked a booking as completed.`);
-        }
+        const updatedBooking = await BookingService.markBookingCompletedByVendor(req.params.bookingId, reference);
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by vendor.",
@@ -237,85 +220,9 @@ exports.markBookingCompletedByVendor = markBookingCompletedByVendor;
 // hpome servcie 
 const createHomeServiceBooking = async (req, res) => {
     try {
-        const { clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, serviceLocation, fullAddress, landmark, specialInstruction, } = req.body;
-        // Validate required fields
-        if (!clientId ||
-            !vendorId ||
-            !serviceId ||
-            !paymentMethod ||
-            !serviceName ||
-            !price ||
-            !totalAmount ||
-            !time ||
-            !date ||
-            !serviceLocation ||
-            !fullAddress) {
-            return res.status(400).json({
-                error: "Missing required fields. Please fill all mandatory fields.",
-            });
-        }
-        let referencePhotoUrl = "";
-        // Upload image if file is present
-        if (req.file) {
-            try {
-                const uploadResult = await (0, cloudinary_1.default)(req.file.buffer, req.file.mimetype);
-                referencePhotoUrl = uploadResult.secure_url;
-            }
-            catch (uploadErr) {
-                console.error("Image upload error:", uploadErr);
-                return res.status(500).json({
-                    error: "Failed to upload reference photo. Please try again.",
-                });
-            }
-        }
-        // Create booking
-        let booking;
-        try {
-            booking = await (0, booking_service_1.homeServiceCreateBooking)(clientId, vendorId, serviceId, paymentMethod, serviceName, Number(price), Number(totalAmount), time, date, reference, serviceType, {
-                serviceLocation,
-                fullAddress,
-                landmark,
-                referencePhoto: referencePhotoUrl,
-                specialInstruction,
-            });
-        }
-        catch (bookingErr) {
-            console.error("Booking creation failed:", bookingErr);
-            return res.status(500).json({
-                error: "Failed to create booking. Please try again later.",
-            });
-        }
-        // Get vendor's user ID
-        let vendor;
-        try {
-            vendor = await prisma_1.default.vendorOnboarding.findUnique({
-                where: { id: vendorId },
-                select: {
-                    user: {
-                        select: { id: true, firstName: true },
-                    },
-                },
-            });
-        }
-        catch (vendorFetchErr) {
-            console.error("Failed to fetch vendor data:", vendorFetchErr);
-            return res.status(500).json({
-                error: "Failed to fetch vendor information.",
-            });
-        }
-        // Notify vendor if available
-        if (vendor?.user?.id) {
-            const vendorUserId = vendor.user.id;
-            await (0, notification_service_1.createNotification)(vendorUserId, `You have a new home service booking for ${serviceName} on ${date} at ${time}`);
-            await (0, notifyUser_helper_1.notifyUser)(vendorUserId, 'New Home Service Booking', `You have a new booking for ${serviceName} on ${date} at ${time}.`);
-        }
-        // Notify client
-        await (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
-        await (0, notifyUser_helper_1.notifyUser)(clientId, 'Booking Confirmed', `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
-        return res.status(201).json({
-            message: "Booking created successfully",
-            data: booking,
-        });
+        const { clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, homeDetails, } = req.body;
+        const booking = await (0, booking_service_1.homeServiceCreateBooking)(req.user.id, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, homeDetails);
+        res.status(201).json({ success: true, message: "Booking created", data: booking });
     }
     catch (err) {
         console.error("Create booking error:", err);
@@ -327,7 +234,7 @@ const createHomeServiceBooking = async (req, res) => {
 exports.createHomeServiceBooking = createHomeServiceBooking;
 const acceptBookingHandler = async (req, res) => {
     try {
-        const { bookingId } = req.body;
+        const { bookingId } = req.params;
         const vendorId = req.user.id;
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
         // Notify client about acceptance

@@ -141,7 +141,8 @@ export const getMyBookings = async (req: Request, res: Response) => {
 
 
 export const changeBookingStatus = async (req: Request, res: Response) => {
-  const { status, completedBy, reference, bookingId } = req.body;
+  const { bookingId } = req.params;
+  const { status, completedBy, reference } = req.body;
 
   try {
     const booking = await BookingService.getBookingById(bookingId);
@@ -252,30 +253,9 @@ export const changeBookingStatus = async (req: Request, res: Response) => {
 
 
 export const markBookingCompletedByClient = async (req: Request, res: Response) => {
-  const { reference, bookingId } = req.body;
-  const userId = req.user!.id;
-
+    const {reference} = req.body
   try {
-    const updatedBooking = await BookingService.markBookingCompletedByClient(bookingId, reference);
-
-    await createNotification(
-      userId,
-      `You have successfully marked a booking as completed.`
-    );
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { fcmToken: true },
-    });
-
-    if (user?.fcmToken) {
-      await pushNotificationService.sendPushNotification(
-        user.fcmToken,
-        'Booking Completed',
-        `You have successfully marked a booking as completed.`
-      );
-    }
-
+    const updatedBooking = await BookingService.markBookingCompletedByClient(req.params.bookingId, reference);
     return res.status(200).json({
       success: true,
       message: "Booking marked as completed by client.",
@@ -288,30 +268,10 @@ export const markBookingCompletedByClient = async (req: Request, res: Response) 
 
 
 export const markBookingCompletedByVendor = async (req: Request, res: Response) => {
-  const { reference, bookingId } = req.body;
-  const userId = req.user!.id;
 
+  const {reference} = req.body
   try {
-    const updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
-
-    await createNotification(
-      userId,
-      `You have successfully marked a booking as completed.`
-    );
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { fcmToken: true },
-    });
-
-    if (user?.fcmToken) {
-      await pushNotificationService.sendPushNotification(
-        user.fcmToken,
-        'Booking Completed',
-        `You have successfully marked a booking as completed.`
-      );
-    }
-
+    const updatedBooking = await BookingService.markBookingCompletedByVendor(req.params.bookingId, reference);
     return res.status(200).json({
       success: true,
       message: "Booking marked as completed by vendor.",
@@ -341,139 +301,36 @@ export const createHomeServiceBooking = async (req: Request, res: Response) => {
       date,
       reference,
       serviceType,
-      serviceLocation,
-      fullAddress,
-      landmark,
-      specialInstruction,
-    } = req.body;
+      homeDetails,
+    } = req.body
 
-    // Validate required fields
-    if (
-      !clientId ||
-      !vendorId ||
-      !serviceId ||
-      !paymentMethod ||
-      !serviceName ||
-      !price ||
-      !totalAmount ||
-      !time ||
-      !date ||
-      !serviceLocation ||
-      !fullAddress
-    ) {
-      return res.status(400).json({
-        error: "Missing required fields. Please fill all mandatory fields.",
-      });
-    }
+    const booking = await homeServiceCreateBooking(
+  req.user!.id,
+  serviceId,
+  paymentMethod,
+  serviceName,
+  price,
+  totalAmount,
+  time,
+  date,
+  reference,
+  serviceType,
+  homeDetails
+)
 
-    let referencePhotoUrl = "";
-
-    // Upload image if file is present
-    if (req.file) {
-      try {
-        const uploadResult = await uploadToCloudinary(
-          req.file.buffer,
-          req.file.mimetype
-        );
-        referencePhotoUrl = uploadResult.secure_url;
-      } catch (uploadErr: any) {
-        console.error("Image upload error:", uploadErr);
-        return res.status(500).json({
-          error: "Failed to upload reference photo. Please try again.",
-        });
-      }
-    }
-
-    // Create booking
-    let booking;
-    try {
-      booking = await homeServiceCreateBooking(
-        clientId,
-        vendorId,
-        serviceId,
-        paymentMethod,
-        serviceName,
-        Number(price),
-        Number(totalAmount),
-        time,
-        date,
-        reference,
-        serviceType,
-        {
-          serviceLocation,
-          fullAddress,
-          landmark,
-          referencePhoto: referencePhotoUrl,
-          specialInstruction,
-        }
-      );
-    } catch (bookingErr: any) {
-      console.error("Booking creation failed:", bookingErr);
-      return res.status(500).json({
-        error: "Failed to create booking. Please try again later.",
-      });
-    }
-
-    // Get vendor's user ID
-    let vendor;
-    try {
-      vendor = await prisma.vendorOnboarding.findUnique({
-        where: { id: vendorId },
-        select: {
-          user: {
-            select: { id: true, firstName: true },
-          },
-        },
-      });
-    } catch (vendorFetchErr: any) {
-      console.error("Failed to fetch vendor data:", vendorFetchErr);
-      return res.status(500).json({
-        error: "Failed to fetch vendor information.",
-      });
-    }
-
-    // Notify vendor if available
-    if (vendor?.user?.id) {
-      const vendorUserId = vendor.user.id;
-      await createNotification(
-        vendorUserId,
-        `You have a new home service booking for ${serviceName} on ${date} at ${time}`
-      );
-
-      await notifyUser(
-        vendorUserId,
-        'New Home Service Booking',
-        `You have a new booking for ${serviceName} on ${date} at ${time}.`
-      );
-    }
-
-    // Notify client
-    await createNotification(
-      clientId,
-      `Your booking for ${serviceName} on ${date} at ${time} was successful.`
-    );
-
-    await notifyUser(
-      clientId,
-      'Booking Confirmed',
-      `Your booking for ${serviceName} on ${date} at ${time} was successful.`
-    );
-
-    return res.status(201).json({
-      message: "Booking created successfully",
-      data: booking,
-    });
+    res.status(201).json({ success: true, message: "Booking created", data: booking })
   } catch (err: any) {
     console.error("Create booking error:", err);
     return res.status(500).json({
       error: err.message || "An unexpected server error occurred.",
     });
   }
-};
+}
+
 export const acceptBookingHandler = async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.body;
-    const vendorId = req.user!.id;
+    const { bookingId } = req.params
+    const vendorId = req.user!.id
 
     const booking = await acceptBooking(vendorId, bookingId);
 
