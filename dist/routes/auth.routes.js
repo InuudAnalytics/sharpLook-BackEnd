@@ -17,4 +17,5 @@ router.post("/verify-otp", auth_controller_2.verifyOtp);
 router.post("/request-password-reset", auth_controller_1.requestReset);
 router.post("/reset-password", auth_controller_1.reset);
 router.post("/register-vendor", upload_middleware_1.uploadSingle, vendorOnboarding_controller_1.registerVendor);
+router.post('/savePushToken', auth_controller_1.saveFcmToken);
 exports.default = router;

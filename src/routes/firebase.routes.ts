@@ -1,7 +1,8 @@
 // routes/api/testPush.ts
 import admin from '../utils/firebase';
+import { Request, Response } from "express";
 
-export async function sendTestPush(req, res) {
+export async function sendTestPush(req: Request, res: Response) {
   const { token } = req.body;
 
   try {
@@ -16,6 +17,6 @@ export async function sendTestPush(req, res) {
     return res.json({ success: true, response });
   } catch (error) {
     console.error('Push error:', error);
-    return res.status(500).json({ error: 'Push failed', details: error.message });
+    return res.status(500).json({ error: 'Push failed' });
   }
 }

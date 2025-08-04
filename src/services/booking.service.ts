@@ -302,7 +302,7 @@ export const homeServiceCreateBooking = async (
         };
       }
 
-      await debitWallet(wallet.id, price, "Booking Payment", reference);
+      await debitWallet(wallet.id, totalAmount, "Booking Payment", reference);
     } else {
       // Non-wallet payments must have a reference
       if (!reference || reference.trim() === "") {

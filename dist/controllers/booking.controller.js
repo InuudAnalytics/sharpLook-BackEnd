@@ -42,6 +42,8 @@ const notification_service_1 = require("../services/notification.service");
 const booking_service_1 = require("../services/booking.service");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
 const prisma_1 = __importDefault(require("../config/prisma"));
+const pushNotifications_service_1 = require("../services/pushNotifications.service");
+const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const bookVendor = async (req, res) => {
     const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod } = req.body;
     // Corrected to match your service
@@ -71,6 +73,20 @@ const bookVendor = async (req, res) => {
         const booking = await BookingService.createBooking(clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, referencePhoto);
         await (0, notification_service_1.createNotification)(vendorId, `You received a new booking request for ${serviceName} on ${date} at ${time}.`);
         await (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} has been placed successfully.`);
+        const vendorUser = await prisma_1.default.user.findUnique({
+            where: { id: vendorId },
+            select: { fcmToken: true }, // Ensure you have fcmToken in user table
+        });
+        if (vendorUser?.fcmToken) {
+            await pushNotifications_service_1.pushNotificationService.sendPushNotification(vendorUser.fcmToken, 'New Booking Request', `You have a new booking request for ${serviceName} on ${date} at ${time}.`);
+        }
+        const clientUser = await prisma_1.default.user.findUnique({
+            where: { id: clientId },
+            select: { fcmToken: true },
+        });
+        if (clientUser?.fcmToken) {
+            await pushNotifications_service_1.pushNotificationService.sendPushNotification(clientUser.fcmToken, 'Booking Confirmed', `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
+        }
         return res.status(201).json({
             success: true,
             message: "Booking created successfully",
@@ -113,16 +129,29 @@ const changeBookingStatus = async (req, res) => {
                 message: "Booking not found",
             });
         }
+        const clientUser = await prisma_1.default.user.findUnique({
+            where: { id: booking.clientId },
+            select: { fcmToken: true },
+        });
+        const vendorUser = await prisma_1.default.user.findUnique({
+            where: { id: booking.vendorId },
+            select: { fcmToken: true },
+        });
         let updatedBooking;
         if (status === "COMPLETED" && completedBy) {
-            // Mark completion by client or vendor
             if (completedBy === "CLIENT") {
                 updatedBooking = await BookingService.markBookingCompletedByClient(bookingId, reference);
                 await (0, notification_service_1.createNotification)(booking.vendorId, `Client marked booking for ${booking.serviceName} as completed.`);
+                if (vendorUser?.fcmToken) {
+                    await pushNotifications_service_1.pushNotificationService.sendPushNotification(vendorUser.fcmToken, 'Booking Completed', `Client marked booking for ${booking.serviceName} as completed.`);
+                }
             }
             else if (completedBy === "VENDOR") {
                 updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
                 await (0, notification_service_1.createNotification)(booking.clientId, `Vendor marked booking for ${booking.serviceName} as completed.`);
+                if (clientUser?.fcmToken) {
+                    await pushNotifications_service_1.pushNotificationService.sendPushNotification(clientUser.fcmToken, 'Booking Completed', `Vendor marked booking for ${booking.serviceName} as completed.`);
+                }
             }
             else {
                 return res.status(400).json({
@@ -136,6 +165,12 @@ const changeBookingStatus = async (req, res) => {
             updatedBooking = await BookingService.updateBookingStatus(bookingId, status);
             await (0, notification_service_1.createNotification)(booking.clientId, `Your booking for ${booking.serviceName} was ${status.toLowerCase()}.`);
             await (0, notification_service_1.createNotification)(booking.vendorId, `You ${status.toLowerCase()} a booking for ${booking.serviceName}.`);
+            if (status === "ACCEPTED" && clientUser?.fcmToken) {
+                await pushNotifications_service_1.pushNotificationService.sendPushNotification(clientUser.fcmToken, 'Booking Accepted', `Your booking for ${booking.serviceName} has been accepted.`);
+            }
+            if (vendorUser?.fcmToken) {
+                await pushNotifications_service_1.pushNotificationService.sendPushNotification(vendorUser.fcmToken, 'Booking Status Updated', `You ${status.toLowerCase()} a booking for ${booking.serviceName}.`);
+            }
         }
         return res.status(200).json({
             success: true,
@@ -156,7 +191,14 @@ const markBookingCompletedByClient = async (req, res) => {
     const userId = req.user.id;
     try {
         const updatedBooking = await BookingService.markBookingCompletedByClient(bookingId, reference);
-        await (0, notification_service_1.createNotification)(userId, `You have Sucessfully marked a Booking completed`);
+        await (0, notification_service_1.createNotification)(userId, `You have successfully marked a booking as completed.`);
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+            select: { fcmToken: true },
+        });
+        if (user?.fcmToken) {
+            await pushNotifications_service_1.pushNotificationService.sendPushNotification(user.fcmToken, 'Booking Completed', `You have successfully marked a booking as completed.`);
+        }
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by client.",
@@ -173,7 +215,14 @@ const markBookingCompletedByVendor = async (req, res) => {
     const userId = req.user.id;
     try {
         const updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
-        await (0, notification_service_1.createNotification)(userId, `You have Sucessfully marked a Booking completed`);
+        await (0, notification_service_1.createNotification)(userId, `You have successfully marked a booking as completed.`);
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+            select: { fcmToken: true },
+        });
+        if (user?.fcmToken) {
+            await pushNotifications_service_1.pushNotificationService.sendPushNotification(user.fcmToken, 'Booking Completed', `You have successfully marked a booking as completed.`);
+        }
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by vendor.",
@@ -256,22 +305,13 @@ const createHomeServiceBooking = async (req, res) => {
         }
         // Notify vendor if available
         if (vendor?.user?.id) {
-            try {
-                await (0, notification_service_1.createNotification)(vendor.user.id, `You have a new home service booking for ${serviceName} on ${date} at ${time}`);
-            }
-            catch (notifyVendorErr) {
-                console.warn("Vendor notification failed:", notifyVendorErr);
-                // continue silently or log
-            }
+            const vendorUserId = vendor.user.id;
+            await (0, notification_service_1.createNotification)(vendorUserId, `You have a new home service booking for ${serviceName} on ${date} at ${time}`);
+            await (0, notifyUser_helper_1.notifyUser)(vendorUserId, 'New Home Service Booking', `You have a new booking for ${serviceName} on ${date} at ${time}.`);
         }
         // Notify client
-        try {
-            await (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
-        }
-        catch (notifyClientErr) {
-            console.warn("Client notification failed:", notifyClientErr);
-            // continue silently or log
-        }
+        await (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
+        await (0, notifyUser_helper_1.notifyUser)(clientId, 'Booking Confirmed', `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
         return res.status(201).json({
             message: "Booking created successfully",
             data: booking,
@@ -290,11 +330,22 @@ const acceptBookingHandler = async (req, res) => {
         const { bookingId } = req.body;
         const vendorId = req.user.id;
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
-        // TODO: Notify client about acceptance (e.g., socket or push notification)
-        res.json({ success: true, message: "Booking accepted", data: booking });
+        // Notify client about acceptance
+        if (booking.clientId) {
+            await (0, notifyUser_helper_1.notifyUser)(booking.clientId, 'Booking Accepted', `Your booking for ${booking.serviceName} has been accepted.`);
+            await (0, notification_service_1.createNotification)(booking.clientId, `Your booking for ${booking.serviceName} has been accepted.`);
+        }
+        res.json({
+            success: true,
+            message: "Booking accepted",
+            data: booking,
+        });
     }
     catch (err) {
-        res.status(400).json({ success: false, message: err.message || "Failed to accept booking" });
+        res.status(400).json({
+            success: false,
+            message: err.message || "Failed to accept booking",
+        });
     }
 };
 exports.acceptBookingHandler = acceptBookingHandler;
@@ -304,11 +355,18 @@ const payForBookingHandler = async (req, res) => {
         const clientId = req.user.id;
         const { reference, paymentMethod } = req.body;
         const booking = await (0, booking_service_1.payForAcceptedBooking)(clientId, bookingId, reference, paymentMethod);
-        // TODO: Notify vendor about payment (e.g., socket or push notification)
+        // Notify Vendor about Payment
+        if (booking.vendorId) {
+            await (0, notifyUser_helper_1.notifyUser)(booking.vendorId, 'Payment Received', `You have received payment for the booking of ${booking.serviceName}.`);
+            await (0, notification_service_1.createNotification)(booking.vendorId, `You have received payment for the booking of ${booking.serviceName}.`);
+        }
         res.json({ success: true, message: "Booking paid", data: booking });
     }
     catch (err) {
-        res.status(400).json({ success: false, message: err.message || "Failed to pay for booking" });
+        res.status(400).json({
+            success: false,
+            message: err.message || "Failed to pay for booking",
+        });
     }
 };
 exports.payForBookingHandler = payForBookingHandler;

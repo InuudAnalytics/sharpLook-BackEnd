@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentUser = exports.verifyOtp = exports.sendOtp = exports.reset = exports.requestReset = exports.login = exports.register = void 0;
+exports.saveFcmToken = exports.getCurrentUser = exports.verifyOtp = exports.sendOtp = exports.reset = exports.requestReset = exports.login = exports.register = void 0;
 const auth_service_1 = require("../services/auth.service");
 const auth_service_2 = require("../services/auth.service");
 const otp_service_1 = require("../services/otp.service");
@@ -227,3 +227,22 @@ const getCurrentUser = async (req, res) => {
     }
 };
 exports.getCurrentUser = getCurrentUser;
+const saveFcmToken = async (req, res) => {
+    const userId = req.user.id;
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+        return res.status(400).json({ success: false, message: "FCM token is required" });
+    }
+    try {
+        await prisma_1.default.user.update({
+            where: { id: userId },
+            data: { fcmToken },
+        });
+        return res.status(200).json({ success: true, message: "FCM token saved successfully" });
+    }
+    catch (err) {
+        console.error("Failed to save FCM token:", err.message);
+        return res.status(500).json({ success: false, message: "Failed to save FCM token" });
+    }
+};
+exports.saveFcmToken = saveFcmToken;

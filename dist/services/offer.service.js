@@ -318,7 +318,7 @@ exports.cancelOffer = cancelOffer;
 const getAllAvailableOffers = async () => {
     return prisma_1.default.serviceOffer.findMany({
         where: {
-            status: "PENDING", // or whatever your "open" status is
+            status: "PENDING",
         },
         orderBy: {
             createdAt: "desc",

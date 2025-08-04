@@ -240,7 +240,7 @@ const homeServiceCreateBooking = async (clientId, vendorId, serviceId, paymentMe
                     message: "Insufficient wallet balance",
                 };
             }
-            await (0, wallet_service_1.debitWallet)(wallet.id, price, "Booking Payment", reference);
+            await (0, wallet_service_1.debitWallet)(wallet.id, totalAmount, "Booking Payment", reference);
         }
         else {
             // Non-wallet payments must have a reference
