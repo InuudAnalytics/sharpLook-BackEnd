@@ -84,6 +84,7 @@ export const createTransferRecipient = async (
 ) => {
   const response = await axios.post(
     `${PAYSTACK_BASE}/transferrecipient`,
+    
     {
       type: "nuban",
       name: name,
