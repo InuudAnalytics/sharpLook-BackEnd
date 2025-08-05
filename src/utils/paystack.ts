@@ -86,7 +86,7 @@ export const createTransferRecipient = async (
     `${PAYSTACK_BASE}/transferrecipient`,
     {
       type: "nuban",
-      name,
+      name: name,
       account_number: accountNumber,
       bank_code: bankCode,
       currency: "NGN",

@@ -63,7 +63,7 @@ exports.getBanks = getBanks;
 const createTransferRecipient = async (name, accountNumber, bankCode) => {
     const response = await axios_1.default.post(`${PAYSTACK_BASE}/transferrecipient`, {
         type: "nuban",
-        name,
+        name: name,
         account_number: accountNumber,
         bank_code: bankCode,
         currency: "NGN",
