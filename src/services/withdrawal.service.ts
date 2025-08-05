@@ -114,7 +114,6 @@ export class WithdrawalService {
       },
     });
 
-    
     return {
       message:
         transfer.status === "success"
