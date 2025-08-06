@@ -141,8 +141,8 @@ export const getMyBookings = async (req: Request, res: Response) => {
 
 
 export const changeBookingStatus = async (req: Request, res: Response) => {
-  const { bookingId } = req.params;
-  const { status, completedBy, reference } = req.body;
+  // const {  } = req.params;
+  const { status, completedBy, reference, bookingId } = req.body;
 
   try {
     const booking = await BookingService.getBookingById(bookingId);
