@@ -116,7 +116,7 @@ export const handleVendorAccept = async (req: Request, res: Response) => {
 
 
 export const selectVendorController = async (req: Request, res: Response) => {
-  const { offerId, selectedVendorId, reference, paymentMethod } = req.body;
+  const { offerId, selectedVendorId, reference, paymentMethod, totalAmount } = req.body;
   const clientId = req.user!.id;
   console.log("this is body data", req.body);
 
@@ -141,7 +141,8 @@ export const selectVendorController = async (req: Request, res: Response) => {
     offerId,
     selectedVendorId,
     reference,
-    paymentMethod
+    paymentMethod,
+    totalAmount
   );
 
   if (result.success) {

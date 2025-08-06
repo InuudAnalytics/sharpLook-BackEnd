@@ -1,7 +1,8 @@
 import prisma from "../config/prisma";
-import { BookingStatus, PaymentStatus, Booking } from "@prisma/client";
+import { BookingStatus, PaymentStatus, Booking, ServiceOfferBooking, } from "@prisma/client";
 import { debitWallet, getUserWallet, creditWallet } from "./wallet.service";
 import { verifyPayment } from "../utils/paystack"; // if Paystack used
+import { createNotification } from "./notification.service";
 
 export const createBooking = async (
   clientId: string,
@@ -108,40 +109,82 @@ export const updateBookingStatus = async (
 
 export const markBookingCompletedByClient = async (
   bookingId: string,
-  creditReference: string 
+  creditReference: string
 ) => {
-  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-  if (!booking) throw new Error("Booking not found");
+  // Try Standard Booking first
+  const standardBooking = await prisma.booking.findUnique({ where: { id: bookingId } });
 
-  const updated = await prisma.booking.update({
-    where: { id: bookingId },
-    data: { clientCompleted: true },
-  });
+  if (standardBooking) {
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { clientCompleted: true },
+    });
 
-  if (updated.vendorCompleted) {
-    await finalizeBookingPayment(updated, creditReference);
+    if (updated.vendorCompleted) {
+      await finalizeBookingPayment(updated, creditReference);
+    }
+
+    return { ...updated, bookingType: "STANDARD" };
   }
 
-  return updated;
+  // Try Service Offer Booking
+  const offerBooking = await prisma.serviceOfferBooking.findUnique({
+    where: { id: bookingId },
+  });
+
+  if (offerBooking) {
+    const updated = await prisma.serviceOfferBooking.update({
+      where: { id: bookingId },
+      data: { clientCompleted: true },
+    });
+
+    if (updated.vendorCompleted) {
+      await finalizeServiceOfferBookingPayment(updated, creditReference);
+    }
+
+    return { ...updated, bookingType: "SERVICE_OFFER" };
+  }
+
+  // If neither booking type was found
+  throw new Error("Booking not found");
 };
+
+
 
 export const markBookingCompletedByVendor = async (
   bookingId: string,
-  creditReference: string // reference to pass on final credit
+  creditReference: string
 ) => {
-  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-  if (!booking) throw new Error("Booking not found");
+  // Standard Booking
+  const standardBooking = await prisma.booking.findUnique({ where: { id: bookingId } });
 
-  const updated = await prisma.booking.update({
+  if (standardBooking) {
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { vendorCompleted: true },
+    });
+
+    if (updated.clientCompleted) {
+      await finalizeBookingPayment(updated, creditReference);
+    }
+
+    return { ...updated, bookingType: "STANDARD" };
+  }
+
+  // Service Offer Booking
+  const offerBooking = await prisma.serviceOfferBooking.findUnique({ where: { id: bookingId } });
+  if (!offerBooking) throw new Error("Booking not found");
+
+  const updated = await prisma.serviceOfferBooking.update({
     where: { id: bookingId },
     data: { vendorCompleted: true },
   });
 
   if (updated.clientCompleted) {
-    await finalizeBookingPayment(updated, creditReference);
+    await finalizeServiceOfferBookingPayment(updated, creditReference);
   }
 
-  return updated;
+  return { ...updated, bookingType: "SERVICE_OFFER" };
 };
 
 const finalizeBookingPayment = async (
@@ -170,15 +213,58 @@ await creditWallet(prisma, vendorWallet.id, booking.price, "Booking Payment Rece
   });
 };
 
+
+const finalizeServiceOfferBookingPayment = async (
+  booking: ServiceOfferBooking,
+  reference: string
+): Promise<ServiceOfferBooking> => {
+  if (booking.paymentStatus !== PaymentStatus.LOCKED) {
+    throw new Error("Payment is not locked or already finalized");
+  }
+
+  const vendorWallet = await getUserWallet(booking.vendorId);
+  if (!vendorWallet) throw new Error("Vendor wallet not found");
+
+  await creditWallet(
+    prisma,
+    vendorWallet.id,
+    booking.price,
+    "Service Offer Booking Payment Received",
+    reference
+  );
+await createNotification(
+  booking.vendorId,
+  `You have received payment for a service offer: ${booking.serviceName}`,
+  "BOOKING"
+);
+
+await createNotification(
+  booking.clientId,
+  `Your service offer (${booking.serviceName}) has been completed successfully.`,
+  "BOOKING"
+);
+
+  return await prisma.serviceOfferBooking.update({
+    where: { id: booking.id },
+    data: {
+      paymentStatus: PaymentStatus.COMPLETED,
+      status: BookingStatus.COMPLETED,
+    },
+  });
+};
+
+
 export const getBookingById = async (bookingId: string) => {
   return await prisma.booking.findUnique({
     where: { id: bookingId },
   });
 };
 export const getUserBookings = async (userId: string, role: "CLIENT" | "VENDOR") => {
-  const filter = role === "CLIENT" ? { clientId: userId } : { vendorId: userId };
+  const isClient = role === "CLIENT";
+  const filter = isClient ? { clientId: userId } : { vendorId: userId };
 
-  const bookings = await prisma.booking.findMany({
+  // Standard Bookings
+  const standardBookings = await prisma.booking.findMany({
     where: filter,
     include: {
       dispute: true,
@@ -241,8 +327,108 @@ export const getUserBookings = async (userId: string, role: "CLIENT" | "VENDOR")
     },
   });
 
-  return bookings;
+  // Service Offer Bookings
+  const serviceOfferBookings = await prisma.serviceOfferBooking.findMany({
+    where: filter,
+    include: {
+      serviceOffer: {
+        select: {
+          id: true,
+          serviceName: true,
+          serviceType: true,
+          serviceImage: true,
+          offerAmount: true,
+        },
+      },
+      client: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatar: true,
+          phone: true,
+        },
+      },
+      vendor: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatar: true,
+          phone: true,
+          location: true,
+          bio: true,
+          vendorOnboarding: {
+            select: {
+              id: true,
+              serviceType: true,
+              homeServicePrice: true,
+              identityImage: true,
+              registerationNumber: true,
+              businessName: true,
+              bio: true,
+              location: true,
+              servicesOffered: true,
+              profileImage: true,
+              pricing: true,
+              service: true,
+              approvalStatus: true,
+              specialties: true,
+              portfolioImages: true,
+              serviceRadiusKm: true,
+              latitude: true,
+              longitude: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      date: "desc",
+    },
+  });
+
+  // Normalize both sets to match a single structure
+  const normalizedStandardBookings = standardBookings.map((b) => ({
+    ...b,
+    bookingType: "STANDARD",
+  }));
+
+  const normalizedServiceOfferBookings = serviceOfferBookings.map((b) => ({
+    id: b.id,
+    service: {
+      id: b.serviceOffer?.id,
+      serviceName: b.serviceOffer?.serviceName,
+      serviceImage: b.serviceOffer?.serviceImage,
+      servicePrice: b.serviceOffer?.offerAmount ?? b.price,
+    },
+    date: b.date,
+    time: b.time,
+    price: b.price,
+    totalAmount: b.totalAmount,
+    paymentMethod: b.paymentMethod,
+    paymentStatus: b.paymentStatus,
+    client: b.client,
+    vendor: b.vendor,
+    status: b.status,
+    reference: b.reference,
+    referencePhoto: b.referencePhoto,
+    createdAt: b.createdAt,
+    bookingType: "SERVICE_OFFER",
+    dispute: null, // if you want to support disputes on serviceOfferBooking later
+  }));
+
+  // Combine both and sort by date
+  const allBookings = [...normalizedStandardBookings, ...normalizedServiceOfferBookings].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  return allBookings;
 };
+
 
 
 export const homeServiceCreateBooking = async (
@@ -348,21 +534,35 @@ export const acceptBooking = async (vendorId: string, bookingId: string) => {
 
   if (updated.count === 0) throw new Error("Booking not found, unauthorized, or already accepted");
 
-  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-
-  if (!booking!.clientId) throw new Error("Missing clientId for notification");
-  await prisma.notification.create({
-    data: {
-     userId: booking!.clientId ?? undefined,
-
-      message: `Your booking "${booking!.serviceName}" has been accepted!`,
-      type: "BOOKING",
-     
+  // Fetch booking with vendor and vendorOnboarding
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      vendor: {
+        include: {
+          vendorOnboarding: true, // include onboarding details here
+        },
+      },
     },
   });
 
-  return booking!;
+  if (!booking) throw new Error("Booking not found after update");
+  if (!booking.clientId) throw new Error("Missing clientId for notification");
+
+  // Extract businessName safely
+  const businessName = booking.vendor.vendorOnboarding?.businessName ?? "A vendor";
+
+  await prisma.notification.create({
+    data: {
+      userId: booking.clientId,
+      message: `Your booking "${booking.serviceName}" has been accepted by ${businessName}!`,
+      type: "BOOKING",
+    },
+  });
+
+  return booking;
 };
+
 
 
 export const payForAcceptedBooking = async (

@@ -103,7 +103,12 @@ export const getVendorsForOffer = async (offerId: string) => {
 };
 
 
-export const vendorAcceptOffer = async (vendorId: string, offerId: string, price: number) => {
+export const vendorAcceptOffer = async (
+  vendorId: string,
+  offerId: string,
+  price: number
+) => {
+  // Check if vendor already accepted this offer
   const existing = await prisma.vendorOffer.findFirst({
     where: {
       vendorId,
@@ -115,36 +120,59 @@ export const vendorAcceptOffer = async (vendorId: string, offerId: string, price
     throw new Error("You’ve already accepted this offer.");
   }
 
-    const offer = await prisma.serviceOffer.findUnique({
-      where: { id: offerId },
-      select: {
-        clientId: true,
-        serviceName: true,
+  // Fetch offer details
+  const offer = await prisma.serviceOffer.findUnique({
+    where: { id: offerId },
+    select: {
+      clientId: true,
+      serviceName: true,
+    },
+  });
+
+  if (!offer) throw new Error("Offer not found");
+
+  const { clientId, serviceName } = offer;
+
+  // Fetch vendor details from User model
+  const vendor = await prisma.user.findUnique({
+    where: { id: vendorId },
+    select: {
+      firstName: true,
+      lastName: true,
+      vendorOnboarding: {
+        select: {
+          businessName: true,
+        },
       },
-    });
+    },
+  });
 
-       if (!offer) throw new Error("Offer not found");
+  if (!vendor) throw new Error("Vendor not found");
 
-    const { clientId, serviceName } = offer;
+  const vendorName = `${vendor.firstName} ${vendor.lastName}`;
+  const vendorDisplayName = vendor.vendorOnboarding?.businessName
+    ? `${vendorName} (${vendor.vendorOnboarding.businessName})`
+    : vendorName;
 
-   
+  // Send notification to client with vendor info
+  await createNotification(
+    clientId,
+    `${vendorDisplayName} has accepted your request for "${serviceName}".`
+  );
 
-
-    await createNotification(
-      clientId,
-      `A vendor has accepted your request for ${serviceName}.`
-    );
-
+  // Create vendor offer record
   await prisma.vendorOffer.create({
     data: {
       vendorId,
       serviceOfferId: offerId,
-      price, // 👈 Store the price here
+      price,
+      isAccepted: true, // Optionally mark accepted immediately
     },
   });
 
-  // ...
+  return { success: true, message: "Offer accepted and client notified." };
 };
+
 
 
 
@@ -152,7 +180,8 @@ export const selectVendorForOffer = async (
   offerId: string,
   selectedVendorId: string,
   reference: string,
-  paymentMethod: string
+  paymentMethod: string,
+  totalAmount: number,
 ) => {
   try {
     // 1. Update offer with selection and payment info
@@ -162,6 +191,8 @@ export const selectVendorForOffer = async (
         status: "SELECTED",
         reference,
         paymentMethod,
+        totalAmount,
+        
       },
     });
 
@@ -192,7 +223,6 @@ export const selectVendorForOffer = async (
       clientId,
       serviceType,
       offerAmount,
-      totalAmount,
       serviceName,
       date,
       time,
@@ -202,9 +232,10 @@ export const selectVendorForOffer = async (
       homeLocation,
       fullAddress,
       landMark,
+      
     } = offer;
 
-    if (!totalAmount) throw new Error("Total amount missing");
+    // if (!totalAmount) throw new Error("Total amount missing");
     if (!selectedVendorId) throw new Error("Selected vendor ID missing");
 
     const finalPaymentMethod = paymentMethod;

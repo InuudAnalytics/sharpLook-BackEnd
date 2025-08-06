@@ -132,7 +132,7 @@ const handleVendorAccept = async (req, res) => {
 };
 exports.handleVendorAccept = handleVendorAccept;
 const selectVendorController = async (req, res) => {
-    const { offerId, selectedVendorId, reference, paymentMethod } = req.body;
+    const { offerId, selectedVendorId, reference, paymentMethod, totalAmount } = req.body;
     const clientId = req.user.id;
     console.log("this is body data", req.body);
     // Validate required fields dynamically based on payment method
@@ -149,7 +149,7 @@ const selectVendorController = async (req, res) => {
             });
         }
     }
-    const result = await OfferService.selectVendorForOffer(offerId, selectedVendorId, reference, paymentMethod);
+    const result = await OfferService.selectVendorForOffer(offerId, selectedVendorId, reference, paymentMethod, totalAmount);
     if (result.success) {
         await (0, notification_service_1.createNotification)(clientId, `Your booking for a service Offer has been placed successfully.`);
         await (0, notification_service_1.createNotification)(selectedVendorId, `The Service offer you accepted has been acknowledged and requested`);

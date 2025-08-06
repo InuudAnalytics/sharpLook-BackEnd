@@ -578,6 +578,9 @@ model ServiceOfferBooking {
   reference        String
   referencePhoto   String?
 
+  clientCompleted  Boolean         @default(false)
+  vendorCompleted  Boolean         @default(false)
+
   status           BookingStatus   @default(PENDING)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
