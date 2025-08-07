@@ -166,7 +166,7 @@ export const vendorAcceptOffer = async (
       vendorId,
       serviceOfferId: offerId,
       price,
-      isAccepted: true, // Optionally mark accepted immediately
+      isAccepted: true, 
     },
   });
 

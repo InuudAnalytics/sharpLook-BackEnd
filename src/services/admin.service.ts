@@ -364,10 +364,13 @@ export const deleteUser = async (userId: string) => {
   });
 
   // Update Wallet if exists (remove userId to avoid FK issue)
-  await prisma.wallet.updateMany({
-    where: { userId },
-    data: { userId: null },
-  });
+ await prisma.wallet.update({
+  where: { userId: userId },
+  data: {
+    // your update fields
+  },
+});
+
 
   // Step 2: Delete dependent data (optional relations)
   await prisma.review.deleteMany({

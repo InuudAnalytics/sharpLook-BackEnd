@@ -23,6 +23,7 @@ import withdrawalRoutes from "./routes/withdrawal.routes";
 import categoryRoutes from "./routes/category.routes"
 import createOffersRoutes from "./routes/offer.routes"
 import pushNotificationRoutes from './routes/pushNotification.routes';
+import createMyAcctRoutes from './routes/virtualAcct.routes';
 
 // For clients
 
@@ -99,6 +100,7 @@ app.use("/api/v1/client", cartRoutes)
 app.use("/api/v1/history", historyRoutes)
 app.use("/api/v1/orders", productOrderRoutes);
 app.use("/api/v1", pushNotificationRoutes);
+app.use("/api/v1", createMyAcctRoutes);
 
 
 

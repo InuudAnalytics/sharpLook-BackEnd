@@ -168,7 +168,7 @@ const vendorAcceptOffer = async (vendorId, offerId, price) => {
             vendorId,
             serviceOfferId: offerId,
             price,
-            isAccepted: true, // Optionally mark accepted immediately
+            isAccepted: true,
         },
     });
     return { success: true, message: "Offer accepted and client notified." };

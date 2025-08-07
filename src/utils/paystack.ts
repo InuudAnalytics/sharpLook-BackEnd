@@ -152,3 +152,33 @@ const isRetryablePaystackError = (err: any) => {
 };
 
 
+
+const paystack = axios.create({
+  baseURL: 'https://api.paystack.co',
+  headers: {
+    Authorization: `Bearer ${PAYSTACK_SECRET}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// Create Customer on Paystack
+export const createCustomer= async (email: string, firstName: string, lastName: string, phone: any)=> {
+  const response = await paystack.post('/customer', {
+    email,
+    first_name: firstName,
+    last_name: lastName,
+    phone
+  });
+  return response.data.data;  // returns customer object
+}
+
+// Create Dedicated Virtual Account for a Customer
+export const createVirtual = async  (customerCode: any, preferredBank = 'wema-bank', email : string) => {
+  const response = await paystack.post('/dedicated_account', {
+    customer: customerCode,
+    preferred_bank: preferredBank,
+    email,
+  });
+  return response.data.data;  // returns dedicated account object
+}
+

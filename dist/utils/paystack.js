@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendTransfer = exports.createTransferRecipient = exports.getBanks = exports.generateReference = exports.verifyPayment = exports.initializePayment = void 0;
+exports.createVirtual = exports.createCustomer = exports.sendTransfer = exports.createTransferRecipient = exports.getBanks = exports.generateReference = exports.verifyPayment = exports.initializePayment = void 0;
 const axios_1 = __importDefault(require("axios"));
 const uuid_1 = require("uuid");
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
@@ -111,3 +111,31 @@ const isRetryablePaystackError = (err) => {
     const code = err?.response?.status;
     return code === 502 || code === 503 || code === 504 || err.code === 'ECONNABORTED';
 };
+const paystack = axios_1.default.create({
+    baseURL: 'https://api.paystack.co',
+    headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+        'Content-Type': 'application/json'
+    }
+});
+// Create Customer on Paystack
+const createCustomer = async (email, firstName, lastName, phone) => {
+    const response = await paystack.post('/customer', {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone
+    });
+    return response.data.data; // returns customer object
+};
+exports.createCustomer = createCustomer;
+// Create Dedicated Virtual Account for a Customer
+const createVirtual = async (customerCode, preferredBank = 'wema-bank', email) => {
+    const response = await paystack.post('/dedicated_account', {
+        customer: customerCode,
+        preferred_bank: preferredBank,
+        email,
+    });
+    return response.data.data; // returns dedicated account object
+};
+exports.createVirtual = createVirtual;
