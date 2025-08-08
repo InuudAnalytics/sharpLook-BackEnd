@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkoutCart = void 0;
+exports.getVendorOrders = exports.getMyOrders = exports.checkoutCart = void 0;
 const ProductOrderService = __importStar(require("../services/productOrder.service"));
 const notification_service_1 = require("../services/notification.service");
 const checkoutCart = async (req, res) => {
@@ -58,3 +58,45 @@ const checkoutCart = async (req, res) => {
     }
 };
 exports.checkoutCart = checkoutCart;
+const getMyOrders = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const userOrders = await ProductOrderService.getClientOrdersWithVendors(userId);
+        if (userOrders) {
+            return res.status(200).json({
+                success: true,
+                message: "Orders Gotten",
+                data: userOrders
+            });
+        }
+    }
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "An Error Occured",
+            error
+        });
+    }
+};
+exports.getMyOrders = getMyOrders;
+const getVendorOrders = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const userOrders = await ProductOrderService.getVendorOrders(userId);
+        if (userOrders) {
+            return res.status(200).json({
+                success: true,
+                message: "Orders Gotten",
+                data: userOrders
+            });
+        }
+    }
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "An Error Occured",
+            error
+        });
+    }
+};
+exports.getVendorOrders = getVendorOrders;

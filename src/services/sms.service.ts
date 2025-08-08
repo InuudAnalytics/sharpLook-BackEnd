@@ -6,6 +6,8 @@ export const sendSmS = async (
   
  
 ) => {
+
+  
   const sms = `Your Sharplook NG verification pin is : ${otpCOde}, pls do not share it give this code to anyone.`
   try {
     const response = await axios.post("https://v3.api.termii.com/api/sms/send", {
@@ -19,7 +21,7 @@ export const sendSmS = async (
 
     return response.data;
   } catch (error:any) {
-    console.error("Error sending SMS:", error.data.message);
+    console.error("Error sending SMS:", error.data);
     // throw error;
   }
 };

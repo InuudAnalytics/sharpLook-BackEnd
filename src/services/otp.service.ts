@@ -46,6 +46,8 @@ export const sendOtpService = async (identifier: string) => {
 
   // 📱 Phone
   else if (user.phone === identifier) {
+   
+    
     await sendSmS(user.phone, Number(fourDigitotp));
   }
 

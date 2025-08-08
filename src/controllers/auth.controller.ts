@@ -218,16 +218,25 @@ export const reset = async (req: Request, res: Response) => {
 };
 
 export const sendOtp = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const { email, phone } = req.body;
   console.log("➡️ Sending OTP to:", email);
 
   try {
-    await sendOtpService(email);
+
+    if (email){
+         await sendOtpService(email);
+    }
+    else if (phone){
+     
+      
+      await sendOtpService(phone)
+      
+    }
     console.log("✅ OTP sent successfully");
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent to email",
+      message: "OTP sent Successfully",
     });
   } catch (err: any) {
     console.error("❌ Failed to send OTP:", err.message);

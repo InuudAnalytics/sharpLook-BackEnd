@@ -19,7 +19,7 @@ const sendSmS = async (to, otpCOde) => {
         return response.data;
     }
     catch (error) {
-        console.error("Error sending SMS:", error.data.message);
+        console.error("Error sending SMS:", error.data);
         // throw error;
     }
 };
