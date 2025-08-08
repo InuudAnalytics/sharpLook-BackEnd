@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import * as DisputeService from "../services/dispute.service";
 import { uploadDisputeImage } from "../middlewares/upload.middleware";
 import uploadBufferToCloudinary from "../utils/cloudinary";
+import {
+  createVendorOrderDispute,
+  getAllVendorOrderDisputes,
+  updateVendorOrderDisputeStatus,
+} from "../services/dispute.service";
 
 
 export const raiseDispute = [
@@ -56,5 +61,66 @@ export const resolveDispute = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to update dispute:", error);
     res.status(500).json({ success: false, message: "Failed to update dispute" });
+  }
+};
+
+
+export const createVendorOrderDisputeHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id
+    const { reason,vendorOrderId  } = req.body;
+    // const vendorOrderId = req.params.vendorOrderId;
+
+    let disputeImage: string | undefined;
+      if (req.file) {
+        const result = await uploadBufferToCloudinary(req.file.buffer, "hairdesign/vendors");
+        disputeImage = result.secure_url;
+      }
+
+    const dispute = await createVendorOrderDispute(vendorOrderId, userId, reason, disputeImage);
+    return res.status(201).json(dispute);
+  } catch (err : any) {
+    console.error(err);
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+export const getAllVendorOrderDisputesHandler = async (req: Request, res: Response) => {
+  try {
+    const disputes = await getAllVendorOrderDisputes();
+    return res.status(200).json(disputes);
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch disputes" });
+  }
+};
+
+
+
+export const updateVendorOrderDisputeStatusHandler = async (req: Request, res: Response) => {
+  try {
+    const { status, resolution, disputeId } = req.body;
+
+    // ✅ Validate input
+    if (!disputeId || !status) {
+      return res.status(400).json({ error: "disputeId and status are required" });
+    }
+
+    if (!["RESOLVED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ error: "Invalid dispute status" });
+    }
+
+    const updatedDispute = await updateVendorOrderDisputeStatus(
+      disputeId,
+      status as "RESOLVED" | "REJECTED",
+      resolution
+    );
+
+    return res.status(200).json({
+      message: "Dispute updated successfully",
+      data: updatedDispute,
+    });
+  } catch (err: any) {
+    console.error("Error updating dispute:", err);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 };

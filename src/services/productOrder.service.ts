@@ -322,7 +322,14 @@ export const completeVendorOrder = async (
           : vendorOrder.vendorCompleted,
     },
   });
+   // ✅ Check if a dispute exists for this vendor order
+  const dispute = await prisma.vendorOrderDispute.findUnique({
+    where: { vendorOrderId },
+  });
 
+  if (dispute && dispute.status === "PENDING") {
+    throw new Error("Cannot complete order: a dispute is still pending.");
+  }
   // If both completed and not paid, pay vendor
   if (updated.clientCompleted && updated.vendorCompleted && !updated.paidOut) {
     await prisma.$transaction(async (tx) => {

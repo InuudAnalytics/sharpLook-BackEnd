@@ -36,9 +36,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveDispute = exports.getDisputes = exports.raiseDispute = void 0;
+exports.updateVendorOrderDisputeStatusHandler = exports.getAllVendorOrderDisputesHandler = exports.createVendorOrderDisputeHandler = exports.resolveDispute = exports.getDisputes = exports.raiseDispute = void 0;
 const DisputeService = __importStar(require("../services/dispute.service"));
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
+const dispute_service_1 = require("../services/dispute.service");
 exports.raiseDispute = [
     async (req, res) => {
         const { bookingId, reason } = req.body;
@@ -85,3 +86,54 @@ const resolveDispute = async (req, res) => {
     }
 };
 exports.resolveDispute = resolveDispute;
+const createVendorOrderDisputeHandler = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { reason, vendorOrderId } = req.body;
+        // const vendorOrderId = req.params.vendorOrderId;
+        let disputeImage;
+        if (req.file) {
+            const result = await (0, cloudinary_1.default)(req.file.buffer, "hairdesign/vendors");
+            disputeImage = result.secure_url;
+        }
+        const dispute = await (0, dispute_service_1.createVendorOrderDispute)(vendorOrderId, userId, reason, disputeImage);
+        return res.status(201).json(dispute);
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(400).json({ error: err.message });
+    }
+};
+exports.createVendorOrderDisputeHandler = createVendorOrderDisputeHandler;
+const getAllVendorOrderDisputesHandler = async (req, res) => {
+    try {
+        const disputes = await (0, dispute_service_1.getAllVendorOrderDisputes)();
+        return res.status(200).json(disputes);
+    }
+    catch (err) {
+        return res.status(500).json({ error: "Failed to fetch disputes" });
+    }
+};
+exports.getAllVendorOrderDisputesHandler = getAllVendorOrderDisputesHandler;
+const updateVendorOrderDisputeStatusHandler = async (req, res) => {
+    try {
+        const { status, resolution, disputeId } = req.body;
+        // ✅ Validate input
+        if (!disputeId || !status) {
+            return res.status(400).json({ error: "disputeId and status are required" });
+        }
+        if (!["RESOLVED", "REJECTED"].includes(status)) {
+            return res.status(400).json({ error: "Invalid dispute status" });
+        }
+        const updatedDispute = await (0, dispute_service_1.updateVendorOrderDisputeStatus)(disputeId, status, resolution);
+        return res.status(200).json({
+            message: "Dispute updated successfully",
+            data: updatedDispute,
+        });
+    }
+    catch (err) {
+        console.error("Error updating dispute:", err);
+        return res.status(500).json({ error: err.message || "Internal Server Error" });
+    }
+};
+exports.updateVendorOrderDisputeStatusHandler = updateVendorOrderDisputeStatusHandler;

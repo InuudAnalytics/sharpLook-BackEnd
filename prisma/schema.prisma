@@ -98,6 +98,7 @@
     preferredRadiusKm  Int?
     vendorCommissionSetting   VendorCommissionSetting?
     vendorSubscription VendorSubscription?
+    vendorOrderDisputes  VendorOrderDispute[] @relation("UserVendorOrderDisputes")
 
     
   serviceOfferBookingsAsClient ServiceOfferBooking[] @relation("ServiceOfferBookingClient")
@@ -243,12 +244,32 @@
   status          VendorOrderStatus @default(PENDING)
   clientCompleted Boolean        @default(false)
   vendorCompleted Boolean        @default(false)
-  paidOut         Boolean        @default(false) // when vendor has been paid
+  paidOut         Boolean        @default(false) 
+  vendorOrderDispute VendorOrderDispute?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+
+  hasDispute      Boolean        @default(false)
+  disputeStatus   DisputeStatus?
+
   order           Order          @relation(fields: [orderId], references: [id])
   vendor          User           @relation(fields: [vendorId], references: [id])
+}
+
+model VendorOrderDispute {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  vendorOrderId  String          @unique @db.ObjectId
+  raisedById     String          @db.ObjectId
+  reason         String
+  disputeImage   String?
+  status         DisputeStatus   @default(PENDING)
+  resolution     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime        @default(now())
+
+  vendorOrder    VendorOrder     @relation(fields: [vendorOrderId], references: [id])
+  raisedBy       User            @relation(fields: [raisedById], references: [id], name: "UserVendorOrderDisputes")
 }
 
 
@@ -257,6 +278,7 @@ enum VendorOrderStatus {
   PROCESSING
   DELIVERED
   COMPLETED
+  REJECTED
 }
 
   model Notification {

@@ -39,3 +39,164 @@ export const updateDisputeStatus = async (
     data: { status, resolution },
   });
 };
+
+export const createVendorOrderDispute = async (
+  vendorOrderId: string,
+  raisedById: string,
+  reason: string,
+  disputeImage?: string
+) => {
+  const existingDispute = await prisma.vendorOrderDispute.findUnique({
+    where: { vendorOrderId },
+  });
+
+  if (existingDispute) {
+    throw new Error("A dispute has already been raised for this vendor order.");
+  }
+
+  const dispute = await prisma.vendorOrderDispute.create({
+    data: {
+      vendorOrderId,
+      raisedById,
+      reason,
+      disputeImage,
+    },
+  });
+
+  await prisma.vendorOrder.update({
+    where: { id: vendorOrderId },
+    data: {
+      hasDispute: true,
+      disputeStatus: "PENDING",
+    },
+  });
+
+  return dispute;
+};
+
+export const getAllVendorOrderDisputes = async () => {
+  return await prisma.vendorOrderDispute.findMany({
+    include: {
+      raisedBy: {
+        select: { firstName: true, lastName: true, role: true },
+      },
+      vendorOrder: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+export const updateVendorOrderDisputeStatus = async (
+  disputeId: string,
+  status: "RESOLVED" | "REJECTED",
+  resolution?: "REFUND_TO_CLIENT" | "PAY_VENDOR" | string
+) => {
+  const dispute = await prisma.vendorOrderDispute.findUnique({
+    where: { id: disputeId },
+    include: {
+      vendorOrder: {
+        include: {
+          order: true,
+        },
+      },
+    },
+  });
+
+  if (!dispute) throw new Error("Dispute not found");
+
+  const vendorOrder = dispute.vendorOrder;
+  const order = vendorOrder.order;
+
+  await prisma.$transaction(async (tx) => {
+    // ✅ Handle resolution actions if status is RESOLVED
+    if (status === "RESOLVED") {
+      if (resolution === "REFUND_TO_CLIENT") {
+        const clientWallet = await tx.wallet.findUnique({
+          where: { userId: order.userId },
+        });
+        if (!clientWallet) throw new Error("Client wallet not found");
+
+        await tx.wallet.update({
+          where: { id: clientWallet.id },
+          data: {
+            balance: { increment: vendorOrder.total },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            amount: vendorOrder.total,
+            type: "REFUND",
+            reference: `REFUND-${vendorOrder.id}`,
+            description: `Refund due to dispute resolution`,
+            walletId: clientWallet.id,
+            status: "SUCCESS",
+          },
+        });
+
+        await tx.vendorOrder.update({
+          where: { id: vendorOrder.id },
+          data: {
+            paidOut: false,
+            status: "REJECTED",
+          },
+        });
+      }
+
+      if (resolution === "PAY_VENDOR") {
+        const vendorWallet = await tx.wallet.findUnique({
+          where: { userId: vendorOrder.vendorId },
+        });
+        if (!vendorWallet) throw new Error("Vendor wallet not found");
+
+        await tx.wallet.update({
+          where: { id: vendorWallet.id },
+          data: {
+            balance: { increment: vendorOrder.total },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            amount: vendorOrder.total,
+            type: "CREDIT",
+            reference: `ORDER-PAYOUT-${vendorOrder.id}`,
+            description: `Vendor payout after dispute`,
+            walletId: vendorWallet.id,
+            status: "SUCCESS",
+          },
+        });
+
+        await tx.vendorOrder.update({
+          where: { id: vendorOrder.id },
+          data: {
+            paidOut: true,
+            status: "DELIVERED",
+          },
+        });
+      }
+    }
+
+    // ✅ Update dispute status and vendor order flags
+    await tx.vendorOrderDispute.update({
+      where: { id: disputeId },
+      data: {
+        status,
+        resolution,
+        resolvedAt: new Date(),
+      },
+    });
+
+    await tx.vendorOrder.update({
+      where: { id: vendorOrder.id },
+      data: {
+        disputeStatus: status,
+        hasDispute: false,
+      },
+    });
+  });
+
+  return { message: `Dispute ${status.toLowerCase()} and resolved.` };
+};
+
+
