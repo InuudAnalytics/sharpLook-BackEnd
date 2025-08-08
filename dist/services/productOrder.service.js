@@ -229,7 +229,7 @@ const getVendorOrders = async (vendorId) => {
         include: {
             order: {
                 include: {
-                    user: { select: { id: true, firstName: true, lastName: true, phone: true } },
+                    user: { select: { id: true, firstName: true, lastName: true, phone: true, location: true } },
                     items: {
                         include: {
                             product: true, // include vendor? not necessary here but possible
