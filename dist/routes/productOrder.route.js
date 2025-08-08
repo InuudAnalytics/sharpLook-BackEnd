@@ -43,4 +43,5 @@ const router = express_1.default.Router();
 router.post("/checkout", auth_middleware_1.verifyToken, ProductOrderController.checkoutCart);
 router.get("/getMyOrders", auth_middleware_1.verifyToken, ProductOrderController.getMyOrders);
 router.get("/getVendorOrders", auth_middleware_1.verifyToken, ProductOrderController.getVendorOrders);
+router.post("/complete", auth_middleware_1.verifyToken, ProductOrderController.completeVendorOrderController);
 exports.default = router;

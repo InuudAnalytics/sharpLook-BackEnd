@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getVendorOrders = exports.getMyOrders = exports.checkoutCart = void 0;
+exports.completeVendorOrderController = exports.getVendorOrders = exports.getMyOrders = exports.checkoutCart = void 0;
 const ProductOrderService = __importStar(require("../services/productOrder.service"));
 const notification_service_1 = require("../services/notification.service");
 const checkoutCart = async (req, res) => {
@@ -100,3 +100,30 @@ const getVendorOrders = async (req, res) => {
     }
 };
 exports.getVendorOrders = getVendorOrders;
+const completeVendorOrderController = async (req, res) => {
+    const userId = req.user?.id;
+    const { vendorOrderId, role } = req.body;
+    if (!vendorOrderId || !role) {
+        return res.status(400).json({
+            success: false,
+            message: "vendorOrderId and role are required",
+        });
+    }
+    try {
+        const updatedOrder = await ProductOrderService.completeVendorOrder(vendorOrderId, userId, role);
+        return res.status(200).json({
+            success: true,
+            message: updatedOrder.clientCompleted && updatedOrder.vendorCompleted
+                ? "Order marked complete and payout processed"
+                : "Order marked complete",
+            data: updatedOrder,
+        });
+    }
+    catch (err) {
+        return res.status(400).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
+exports.completeVendorOrderController = completeVendorOrderController;

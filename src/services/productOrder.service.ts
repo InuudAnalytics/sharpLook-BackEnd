@@ -186,7 +186,6 @@ export const checkoutCart = async (userId: string, reference?: string) => {
 };
 
 
-
 export const getClientOrdersWithVendors = async (clientId: string) => {
   const orders = await prisma.order.findMany({
     where: { userId: clientId },
@@ -197,8 +196,8 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
           product: {
             select: {
               id: true,
-              productName: true, // ✅ Correct field name
-              picture: true,     // ✅ Correct field name
+              productName: true,
+              picture: true,
               vendor: {
                 select: {
                   id: true,
@@ -218,6 +217,7 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
       },
       vendorOrders: {
         select: {
+          id: true,          // ✅ Needed for completion
           vendorId: true,
           status: true,
         },
@@ -240,6 +240,7 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
         productImage: item.product.picture,
         quantity: item.quantity,
         price: item.price,
+        vendorOrderId: vendorOrder?.id || null, // ✅ Added here
         vendor: {
           id: item.product.vendor.id,
           firstName: item.product.vendor.firstName,
@@ -257,11 +258,6 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
 
   return formattedOrders;
 };
-
-
-
-
-
 
 
 
@@ -318,7 +314,12 @@ export const completeVendorOrder = async (
     where: { id: vendorOrderId },
     data: {
       clientCompleted: role === "CLIENT" ? true : vendorOrder.clientCompleted,
-      vendorCompleted: role === "VENDOR" ? true : vendorOrder.vendorCompleted,
+      vendorCompleted:
+        role === "VENDOR"
+          ? true
+          : role === "CLIENT"
+          ? true // auto mark vendor complete if client completes
+          : vendorOrder.vendorCompleted,
     },
   });
 
@@ -341,7 +342,9 @@ export const completeVendorOrder = async (
           amount: updated.total,
           type: "CREDIT",
           reference: `ORDER-PAYOUT-${updated.id}`,
-          description: `Payout for order ${vendorOrder.order.reference ?? vendorOrder.order.id}`,
+          description: `Payout for order ${
+            vendorOrder.order.reference ?? vendorOrder.order.id
+          }`,
           walletId: vendorWallet.id,
           status: "SUCCESS",
         },
@@ -350,10 +353,14 @@ export const completeVendorOrder = async (
       // Mark as paid
       await tx.vendorOrder.update({
         where: { id: vendorOrderId },
-        data: { paidOut: true, status: "COMPLETED" },
+        data: { paidOut: true, status: "DELIVERED" },
       });
     });
   }
 
   return updated;
 };
+
+
+
+

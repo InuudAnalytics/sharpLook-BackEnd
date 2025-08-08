@@ -166,8 +166,8 @@ const getClientOrdersWithVendors = async (clientId) => {
                     product: {
                         select: {
                             id: true,
-                            productName: true, // ✅ Correct field name
-                            picture: true, // ✅ Correct field name
+                            productName: true,
+                            picture: true,
                             vendor: {
                                 select: {
                                     id: true,
@@ -187,6 +187,7 @@ const getClientOrdersWithVendors = async (clientId) => {
             },
             vendorOrders: {
                 select: {
+                    id: true, // ✅ Needed for completion
                     vendorId: true,
                     status: true,
                 },
@@ -205,6 +206,7 @@ const getClientOrdersWithVendors = async (clientId) => {
                 productImage: item.product.picture,
                 quantity: item.quantity,
                 price: item.price,
+                vendorOrderId: vendorOrder?.id || null, // ✅ Added here
                 vendor: {
                     id: item.product.vendor.id,
                     firstName: item.product.vendor.firstName,
@@ -263,7 +265,11 @@ const completeVendorOrder = async (vendorOrderId, userId, role) => {
         where: { id: vendorOrderId },
         data: {
             clientCompleted: role === "CLIENT" ? true : vendorOrder.clientCompleted,
-            vendorCompleted: role === "VENDOR" ? true : vendorOrder.vendorCompleted,
+            vendorCompleted: role === "VENDOR"
+                ? true
+                : role === "CLIENT"
+                    ? true // auto mark vendor complete if client completes
+                    : vendorOrder.vendorCompleted,
         },
     });
     // If both completed and not paid, pay vendor
@@ -292,7 +298,7 @@ const completeVendorOrder = async (vendorOrderId, userId, role) => {
             // Mark as paid
             await tx.vendorOrder.update({
                 where: { id: vendorOrderId },
-                data: { paidOut: true, status: "COMPLETED" },
+                data: { paidOut: true, status: "DELIVERED" },
             });
         });
     }

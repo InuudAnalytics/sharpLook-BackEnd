@@ -85,3 +85,37 @@ export const getVendorOrders = async (req: Request, res: Response) => {
 
 }
 
+
+export const completeVendorOrderController = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { vendorOrderId, role } = req.body; 
+
+  if (!vendorOrderId || !role) {
+    return res.status(400).json({
+      success: false,
+      message: "vendorOrderId and role are required",
+    });
+  }
+
+  try {
+    const updatedOrder = await ProductOrderService.completeVendorOrder(
+      vendorOrderId,
+      userId!,
+      role
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        updatedOrder.clientCompleted && updatedOrder.vendorCompleted
+          ? "Order marked complete and payout processed"
+          : "Order marked complete",
+      data: updatedOrder,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

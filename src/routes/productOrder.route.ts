@@ -7,5 +7,5 @@ const router = express.Router();
 router.post("/checkout", verifyToken, ProductOrderController.checkoutCart);
 router.get("/getMyOrders", verifyToken, ProductOrderController.getMyOrders);
 router.get("/getVendorOrders", verifyToken, ProductOrderController.getVendorOrders);
-
+router.post("/complete", verifyToken, ProductOrderController.completeVendorOrderController);
 export default router;
