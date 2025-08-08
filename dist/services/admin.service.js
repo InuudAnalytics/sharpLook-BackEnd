@@ -576,18 +576,20 @@ const getAllDisputes = async () => {
             id: true,
             reason: true,
             status: true,
-            imageUrl: true, // explicitly included
+            imageUrl: true,
             createdAt: true,
             raisedBy: {
                 select: {
                     id: true,
                     firstName: true,
-                    lastName: true
+                    lastName: true,
+                    role: true,
+                    email: true, // optional, if you want email as well
                 }
             },
-            booking: true
+            booking: true, // or select specific fields if needed
         },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
     });
 };
 exports.getAllDisputes = getAllDisputes;

@@ -64,9 +64,22 @@ const getAllVendorOrderDisputes = async () => {
     return await prisma_1.default.vendorOrderDispute.findMany({
         include: {
             raisedBy: {
-                select: { firstName: true, lastName: true, role: true },
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    email: true,
+                },
             },
-            vendorOrder: true,
+            vendorOrder: {
+                select: {
+                    id: true,
+                    total: true,
+                    status: true,
+                    // add other vendorOrder fields you want
+                },
+            },
         },
         orderBy: { createdAt: "desc" },
     });
