@@ -87,7 +87,7 @@ export const getVendorOrders = async (req: Request, res: Response) => {
 
 export const completeVendorOrderController = async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const { vendorOrderIds, role } = req.body; 
+  const { vendorOrderIds, role } = req.body; // expect an array now
 
   if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0 || !role) {
     return res.status(400).json({
