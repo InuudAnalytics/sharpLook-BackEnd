@@ -218,7 +218,7 @@ export const reset = async (req: Request, res: Response) => {
 };
 
 export const sendOtp = async (req: Request, res: Response) => {
-  const userId = req.user!.id
+  // const userId = req.user!.id
   const { email, phone } = req.body;
   console.log("➡️ Sending OTP to:", email);
 

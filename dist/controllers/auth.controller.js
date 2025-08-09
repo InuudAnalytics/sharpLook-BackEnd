@@ -169,7 +169,7 @@ const reset = async (req, res) => {
 };
 exports.reset = reset;
 const sendOtp = async (req, res) => {
-    const userId = req.user.id;
+    // const userId = req.user!.id
     const { email, phone } = req.body;
     console.log("➡️ Sending OTP to:", email);
     try {
