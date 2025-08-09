@@ -64,26 +64,38 @@ export const resolveDispute = async (req: Request, res: Response) => {
   }
 };
 
-
 export const createVendorOrderDisputeHandler = async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id
-    const { reason,vendorOrderId  } = req.body;
-    // const vendorOrderId = req.params.vendorOrderId;
+    const userId = req.user!.id;
+    const { reason, vendorOrderIds } = req.body; 
+    if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0) {
+      return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
+    }
 
     let disputeImage: string | undefined;
-      if (req.file) {
-        const result = await uploadBufferToCloudinary(req.file.buffer, "hairdesign/vendors");
-        disputeImage = result.secure_url;
-      }
+    if (req.file) {
+      const result = await uploadBufferToCloudinary(req.file.buffer, "hairdesign/vendors");
+      disputeImage = result.secure_url;
+    }
 
-    const dispute = await createVendorOrderDispute(vendorOrderId, userId, reason, disputeImage);
-    return res.status(201).json(dispute);
-  } catch (err : any) {
+    const disputes = await createVendorOrderDispute(
+      vendorOrderIds, // array
+      userId,
+      reason,
+      disputeImage
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Dispute(s) created successfully",
+      data: disputes,
+    });
+  } catch (err: any) {
     console.error(err);
     return res.status(400).json({ error: err.message });
   }
 };
+
 
 export const getAllVendorOrderDisputesHandler = async (req: Request, res: Response) => {
   try {

@@ -35,29 +35,37 @@ const updateDisputeStatus = async (disputeId, status, resolution) => {
     });
 };
 exports.updateDisputeStatus = updateDisputeStatus;
-const createVendorOrderDispute = async (vendorOrderId, raisedById, reason, disputeImage) => {
-    const existingDispute = await prisma_1.default.vendorOrderDispute.findUnique({
-        where: { vendorOrderId },
+const createVendorOrderDispute = async (vendorOrderIds, // now an array
+raisedById, reason, disputeImage) => {
+    // Check if any of these already have disputes
+    const existingDisputes = await prisma_1.default.vendorOrderDispute.findMany({
+        where: {
+            vendorOrderId: { in: vendorOrderIds },
+        },
+        select: { vendorOrderId: true },
     });
-    if (existingDispute) {
-        throw new Error("A dispute has already been raised for this vendor order.");
+    if (existingDisputes.length > 0) {
+        const disputedIds = existingDisputes.map(d => d.vendorOrderId);
+        throw new Error(`A dispute has already been raised for these vendor orders: ${disputedIds.join(", ")}`);
     }
-    const dispute = await prisma_1.default.vendorOrderDispute.create({
+    // Create disputes for all IDs in parallel
+    const disputes = await prisma_1.default.$transaction(vendorOrderIds.map(id => prisma_1.default.vendorOrderDispute.create({
         data: {
-            vendorOrderId,
+            vendorOrderId: id,
             raisedById,
             reason,
             disputeImage,
         },
-    });
-    await prisma_1.default.vendorOrder.update({
-        where: { id: vendorOrderId },
+    })));
+    // Update vendor orders to mark dispute
+    await prisma_1.default.vendorOrder.updateMany({
+        where: { id: { in: vendorOrderIds } },
         data: {
             hasDispute: true,
             disputeStatus: "PENDING",
         },
     });
-    return dispute;
+    return disputes;
 };
 exports.createVendorOrderDispute = createVendorOrderDispute;
 const getAllVendorOrderDisputes = async () => {

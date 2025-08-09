@@ -299,73 +299,87 @@ export const updateVendorOrderStatus = async (
 
 
 export const completeVendorOrder = async (
-  vendorOrderId: string,
+  vendorOrderIds: string[], // now an array
   userId: string,
   role: "CLIENT" | "VENDOR"
 ) => {
-  const vendorOrder = await prisma.vendorOrder.findUnique({
-    where: { id: vendorOrderId },
+  if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0) {
+    throw new Error("vendorOrderIds must be a non-empty array");
+  }
+
+  // Fetch all vendor orders
+  const vendorOrders = await prisma.vendorOrder.findMany({
+    where: { id: { in: vendorOrderIds } },
     include: { vendor: true, order: true },
   });
-  if (!vendorOrder) throw new Error("Order not found");
 
-  // Update completion flags
-  const updated = await prisma.vendorOrder.update({
-    where: { id: vendorOrderId },
-    data: {
-      clientCompleted: role === "CLIENT" ? true : vendorOrder.clientCompleted,
-      vendorCompleted:
-        role === "VENDOR"
-          ? true
-          : role === "CLIENT"
-          ? true // auto mark vendor complete if client completes
-          : vendorOrder.vendorCompleted,
-    },
-  });
-   // ✅ Check if a dispute exists for this vendor order
-  const dispute = await prisma.vendorOrderDispute.findUnique({
-    where: { vendorOrderId },
-  });
-
-  if (dispute && dispute.status === "PENDING") {
-    throw new Error("Cannot complete order: a dispute is still pending.");
+  if (vendorOrders.length !== vendorOrderIds.length) {
+    throw new Error("One or more vendor orders not found");
   }
-  // If both completed and not paid, pay vendor
-  if (updated.clientCompleted && updated.vendorCompleted && !updated.paidOut) {
-    await prisma.$transaction(async (tx) => {
-      // Credit vendor wallet
-      const vendorWallet = await tx.wallet.findUnique({
-        where: { userId: vendorOrder.vendorId },
-      });
-      if (!vendorWallet) throw new Error("Vendor wallet not found");
 
-      await tx.wallet.update({
-        where: { id: vendorWallet.id },
-        data: { balance: { increment: updated.total } }, // No commission deduction
-      });
+  // Check for pending disputes
+  const disputes = await prisma.vendorOrderDispute.findMany({
+    where: { vendorOrderId: { in: vendorOrderIds }, status: "PENDING" },
+  });
+  if (disputes.length > 0) {
+    throw new Error(
+      `Cannot complete orders: disputes pending for order(s) ${disputes
+        .map(d => d.vendorOrderId)
+        .join(", ")}`
+    );
+  }
 
-      await tx.transaction.create({
+  return prisma.$transaction(async (tx) => {
+    const updatedOrders = [];
+
+    for (const order of vendorOrders) {
+      const updated = await tx.vendorOrder.update({
+        where: { id: order.id },
         data: {
-          amount: updated.total,
-          type: "CREDIT",
-          reference: `ORDER-PAYOUT-${updated.id}`,
-          description: `Payout for order ${
-            vendorOrder.order.reference ?? vendorOrder.order.id
-          }`,
-          walletId: vendorWallet.id,
-          status: "SUCCESS",
+          clientCompleted: role === "CLIENT" ? true : order.clientCompleted,
+          vendorCompleted:
+            role === "VENDOR"
+              ? true
+              : role === "CLIENT"
+              ? true // auto mark vendor complete if client completes
+              : order.vendorCompleted,
         },
       });
 
-      // Mark as paid
-      await tx.vendorOrder.update({
-        where: { id: vendorOrderId },
-        data: { paidOut: true, status: "DELIVERED" },
-      });
-    });
-  }
+      // If both completed and not paid, pay vendor
+      if (updated.clientCompleted && updated.vendorCompleted && !updated.paidOut) {
+        const vendorWallet = await tx.wallet.findUnique({
+          where: { userId: order.vendorId },
+        });
+        if (!vendorWallet) throw new Error("Vendor wallet not found");
 
-  return updated;
+        await tx.wallet.update({
+          where: { id: vendorWallet.id },
+          data: { balance: { increment: updated.total } },
+        });
+
+        await tx.transaction.create({
+          data: {
+            amount: updated.total,
+            type: "CREDIT",
+            reference: `ORDER-PAYOUT-${updated.id}`,
+            description: `Payout for order ${order.order.reference ?? order.order.id}`,
+            walletId: vendorWallet.id,
+            status: "SUCCESS",
+          },
+        });
+
+        await tx.vendorOrder.update({
+          where: { id: updated.id },
+          data: { paidOut: true, status: "DELIVERED" },
+        });
+      }
+
+      updatedOrders.push(updated);
+    }
+
+    return updatedOrders;
+  });
 };
 
 

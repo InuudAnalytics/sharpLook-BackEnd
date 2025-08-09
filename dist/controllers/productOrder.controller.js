@@ -102,21 +102,23 @@ const getVendorOrders = async (req, res) => {
 exports.getVendorOrders = getVendorOrders;
 const completeVendorOrderController = async (req, res) => {
     const userId = req.user?.id;
-    const { vendorOrderId, role } = req.body;
-    if (!vendorOrderId || !role) {
+    const { vendorOrderIds, role } = req.body;
+    if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0 || !role) {
         return res.status(400).json({
             success: false,
-            message: "vendorOrderId and role are required",
+            message: "vendorOrderIds (array) and role are required",
         });
     }
     try {
-        const updatedOrder = await ProductOrderService.completeVendorOrder(vendorOrderId, userId, role);
+        const updatedOrders = await ProductOrderService.completeVendorOrder(vendorOrderIds, // array
+        userId, role);
+        const allCompletedAndPaid = updatedOrders.every((o) => o.clientCompleted && o.vendorCompleted && o.paidOut);
         return res.status(200).json({
             success: true,
-            message: updatedOrder.clientCompleted && updatedOrder.vendorCompleted
-                ? "Order marked complete and payout processed"
-                : "Order marked complete",
-            data: updatedOrder,
+            message: allCompletedAndPaid
+                ? "All orders marked complete and payouts processed"
+                : "Orders marked complete",
+            data: updatedOrders,
         });
     }
     catch (err) {
