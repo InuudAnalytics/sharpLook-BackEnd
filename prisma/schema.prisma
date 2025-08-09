@@ -92,7 +92,7 @@
       raisedDisputes Dispute[] @relation("UserDisputes")
 
       adminActions    AdminAction[]
-
+         clientDisputeStatus String? 
       // ✅ Optional location preference
       preferredLatitude  Float?
       preferredLongitude Float?

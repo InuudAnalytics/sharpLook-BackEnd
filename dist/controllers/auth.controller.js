@@ -94,11 +94,11 @@ const login = async (req, res) => {
             responseData = await (0, auth_service_2.loginUser)(email, password);
         }
         const { token, user, vendorProfile = null, message, } = responseData;
-        if (!user.isEmailVerified) {
+        if (!user.isOtpVerified) {
             await (0, otp_service_1.sendOtpService)(email);
             return res.status(403).json({
                 success: false,
-                message: "Email not verified. An OTP has been sent to your email.",
+                message: "Email or Phone Number not verified. An OTP has been sent to your email.",
             });
         }
         if (message) {
