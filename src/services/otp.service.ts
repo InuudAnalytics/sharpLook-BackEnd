@@ -1,13 +1,28 @@
 // src/services/otp.service.ts
+import { email } from "zod";
 import prisma from "../config/prisma"
 import { sendMail } from "../helpers/email.helper"
 import { sendSmS } from "./sms.service"
 
 export const sendOtpService = async (identifier: string) => {
   const fourDigitotp = Math.floor(1000 + Math.random() * 9000).toString();
-  console.log(`✅ OTP Generated: ${fourDigitotp} | Length: ${fourDigitotp.length}`);
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+  let user;
 
   if (identifier.includes("@")) {
+    // EMAIL FLOW — only send OTP if user exists
+    user = await prisma.user.findUnique({ where: { email: identifier } });
+
+    if (!user) {
+      throw new Error("No account found with this email.");
+    }
+
+    await prisma.user.update({
+      where: { email: identifier },
+      data: { otp: fourDigitotp, otpExpires },
+    });
+
     await sendMail(
       identifier,
       "🧾 Your Sharplook OTP Code",
@@ -22,9 +37,19 @@ export const sendOtpService = async (identifier: string) => {
         </div>
       `
     );
-  }
-  // 📱 Otherwise treat as phone
-  else {
+  } else {
+    // PHONE FLOW — only update OTP if user exists
+    user = await prisma.user.findFirst({ where: { phone: identifier } });
+
+    if (!user) {
+      throw new Error("No account found with this phone number., Pls use the number you registered with");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { otp: fourDigitotp, otpExpires },
+    });
+
     await sendSmS(identifier, Number(fourDigitotp));
   }
 
@@ -32,11 +57,22 @@ export const sendOtpService = async (identifier: string) => {
 };
 
 
+export const verifyOtpService = async (identifier: string, otp: string) => {
+  if (!identifier || !otp) {
+    throw new Error("Identifier and OTP are required");
+  }
+ 
+  let user;
 
-export const verifyOtpService = async (email: string, otp: string) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+  const isEmail = identifier.includes("@");
+
+  if (isEmail) {
+    // Ensure it's a valid email format (basic check)
+    user = await prisma.user.findUnique({ where: { email: identifier } });
+  } else {
+    // Treat it as a phone number
+    user = await prisma.user.findFirst({ where: { phone: identifier } });
+  }
 
   if (!user) {
     throw new Error("User not found");
@@ -54,16 +90,20 @@ export const verifyOtpService = async (email: string, otp: string) => {
     throw new Error("OTP has expired");
   }
 
-  // Mark user as verified and clear OTP
   await prisma.user.update({
-    where: { email },
+    where: { id: user.id },
     data: {
-      isEmailVerified: true,
+      isEmailVerified: isEmail ? true : user.isEmailVerified,
+      phoneVerified: !isEmail ? true : user.phoneVerified,
       isOtpVerified: true,
       otp: null,
       otpExpires: null,
     },
   });
+
+  return { success: true, message: "OTP verified successfully" };
 };
+
+
 
 

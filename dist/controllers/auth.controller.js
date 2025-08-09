@@ -196,10 +196,15 @@ const sendOtp = async (req, res) => {
 };
 exports.sendOtp = sendOtp;
 const verifyOtp = async (req, res) => {
-    const { email, otp } = req.body;
+    const { email, phone, otp } = req.body;
     console.log("➡️ Verifying OTP:", { email, otp });
     try {
-        await (0, otp_service_1.verifyOtpService)(email, otp);
+        if (email) {
+            await (0, otp_service_1.verifyOtpService)(email, otp);
+        }
+        else {
+            await (0, otp_service_1.verifyOtpService)(phone, otp);
+        }
         console.log("✅ OTP verified successfully");
         return res.status(200).json({
             success: true,

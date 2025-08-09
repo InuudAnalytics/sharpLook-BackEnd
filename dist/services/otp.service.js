@@ -4,14 +4,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyOtpService = exports.sendOtpService = void 0;
-// src/services/otp.service.ts
 const prisma_1 = __importDefault(require("../config/prisma"));
 const email_helper_1 = require("../helpers/email.helper");
 const sms_service_1 = require("./sms.service");
 const sendOtpService = async (identifier) => {
     const fourDigitotp = Math.floor(1000 + Math.random() * 9000).toString();
-    console.log(`✅ OTP Generated: ${fourDigitotp} | Length: ${fourDigitotp.length}`);
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    let user;
     if (identifier.includes("@")) {
+        // EMAIL FLOW — only send OTP if user exists
+        user = await prisma_1.default.user.findUnique({ where: { email: identifier } });
+        if (!user) {
+            throw new Error("No account found with this email.");
+        }
+        await prisma_1.default.user.update({
+            where: { email: identifier },
+            data: { otp: fourDigitotp, otpExpires },
+        });
         await (0, email_helper_1.sendMail)(identifier, "🧾 Your Sharplook OTP Code", `
         <div style="font-family: 'Helvetica Neue', sans-serif; background-color: #f4f4f5; padding: 24px; border-radius: 12px; color: #111827;">
           <h2 style="color: #0f172a; font-size: 22px; margin-bottom: 8px;">Welcome to <span style="color: #3b82f6;">Sharplook</span> 👔</h2>
@@ -23,17 +32,35 @@ const sendOtpService = async (identifier) => {
         </div>
       `);
     }
-    // 📱 Otherwise treat as phone
     else {
+        // PHONE FLOW — only update OTP if user exists
+        user = await prisma_1.default.user.findFirst({ where: { phone: identifier } });
+        if (!user) {
+            throw new Error("No account found with this phone number., Pls use the number you registered with");
+        }
+        await prisma_1.default.user.update({
+            where: { id: user.id },
+            data: { otp: fourDigitotp, otpExpires },
+        });
         await (0, sms_service_1.sendSmS)(identifier, Number(fourDigitotp));
     }
     console.log(`✅ OTP sent to ${identifier}: ${fourDigitotp}`);
 };
 exports.sendOtpService = sendOtpService;
-const verifyOtpService = async (email, otp) => {
-    const user = await prisma_1.default.user.findUnique({
-        where: { email },
-    });
+const verifyOtpService = async (identifier, otp) => {
+    if (!identifier || !otp) {
+        throw new Error("Identifier and OTP are required");
+    }
+    let user;
+    const isEmail = identifier.includes("@");
+    if (isEmail) {
+        // Ensure it's a valid email format (basic check)
+        user = await prisma_1.default.user.findUnique({ where: { email: identifier } });
+    }
+    else {
+        // Treat it as a phone number
+        user = await prisma_1.default.user.findFirst({ where: { phone: identifier } });
+    }
     if (!user) {
         throw new Error("User not found");
     }
@@ -46,15 +73,16 @@ const verifyOtpService = async (email, otp) => {
     if (user.otpExpires < new Date()) {
         throw new Error("OTP has expired");
     }
-    // Mark user as verified and clear OTP
     await prisma_1.default.user.update({
-        where: { email },
+        where: { id: user.id },
         data: {
-            isEmailVerified: true,
+            isEmailVerified: isEmail ? true : user.isEmailVerified,
+            phoneVerified: !isEmail ? true : user.phoneVerified,
             isOtpVerified: true,
             otp: null,
             otpExpires: null,
         },
     });
+    return { success: true, message: "OTP verified successfully" };
 };
 exports.verifyOtpService = verifyOtpService;

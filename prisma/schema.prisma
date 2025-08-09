@@ -1,709 +1,710 @@
-  generator client {
-    provider = "prisma-client-js"
-  }
-
-  datasource db {
-    provider = "mongodb"
-    url      = env("DATABASE_URL")
-  }
-
-  model User {
-    id               String            @id @default(auto()) @map("_id") @db.ObjectId
-    firstName        String
-    lastName         String
-    email            String            @unique
-    phone            String?
-    password         String
-    location         String?
-    role             Role
-    powerGiven Boolean? @default(false)
-
-    vendorOnboarding VendorOnboarding?
-
-    isEmailVerified      Boolean   @default(false)
-    isOtpVerified        Boolean   @default(false)
-    otp                  String?   @db.String
-    otpExpires           DateTime?
-    acceptedPersonalData Boolean   @default(false)
-    name                 String?   @db.String
-    avatar               String?   @db.String
-    bio                  String?   @db.String
-    resetToken           String?   @db.String
-    resetTokenExp        DateTime?
-    notes                String?
-    adminRole            AdminRole?
-
-    // ✅ Self-relation for who referred the user
-    referredBy   User?   @relation("UserReferrals", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-    referredById String? @db.ObjectId
-    referrals    User[]  @relation("UserReferrals")
-
-    // ✅ Referral code
-    referralCode String @unique
-
-    withdrawalRequests    WithdrawalRequest[]    @relation("UserWithdrawals")
-
-    fcmToken  String? 
-
-
-    // ✅ Wallet relation
-    walletId String? @unique
-    wallet   Wallet? @relation(fields: [walletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-    // ✅ Bookings & Reviews
-    clientBookings Booking[] @relation("ClientBooking")
-    vendorBookings Booking[] @relation("VendorBooking")
-    clientReviews  Review[]  @relation("ClientReview")
-    vendorReviews  Review[]  @relation("VendorReview")
-
-    // ✅ Vendor services, availability, etc.
-    vendorAvailability VendorAvailability? 
-    vendorServices       VendorService[]
-
-    // ✅ Messages
-    sentMessages     Message[] @relation("SentMessages")
-    receivedMessages Message[] @relation("ReceivedMessages")
-
-    // ✅ Promotions
-    promotions Promotion[] @relation("UserPromotions")
-
-    // ✅ Cart & Wishlist
-    cartItems     CartItem[]     @relation("UserCartItems")
-    wishlistItems WishlistItem[] @relation("UserWishlistItems")
-
-    // ✅ Product ownership
-    products Product[] @relation("UserProducts")
-
-
-
-  serviceOffers ServiceOffer[]  @relation("UserServiceOffers")
-  vendorOffers  VendorOffer[]   @relation("UserVendorOffers")
-    orders Order[] 
-     vendorOrders VendorOrder[] 
-    // ✅ Notifications
-    notifications Notification[] @relation("UserNotifications")
-
-    // ✅ Referral record model (non-self-relational)
-    referralsMade   Referral[] @relation("ReferredBy")
-    referralsGotten Referral[] @relation("ReferredUser")
-
-
-    raisedDisputes Dispute[] @relation("UserDisputes")
-
-    adminActions    AdminAction[]
-
-    // ✅ Optional location preference
-    preferredLatitude  Float?
-    preferredLongitude Float?
-    preferredRadiusKm  Int?
-    vendorCommissionSetting   VendorCommissionSetting?
-    vendorSubscription VendorSubscription?
-    vendorOrderDisputes  VendorOrderDispute[] @relation("UserVendorOrderDisputes")
-
-    
-  serviceOfferBookingsAsClient ServiceOfferBooking[] @relation("ServiceOfferBookingClient")
-  serviceOfferBookingsAsVendor ServiceOfferBooking[] @relation("ServiceOfferBookingVendor")
-      broadcasts  Broadcast[] @relation("UserToBroadcasts") // optional name for clarity
-
-    isBanned  Boolean  @default(false)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-  }
-
-  model VendorOnboarding {
-    id                  String      @id @default(auto()) @map("_id") @db.ObjectId
-    userId              String      @unique @db.ObjectId
-    user                User        @relation(fields: [userId], references: [id])
-    serviceType         ServiceType
-    homeServicePrice     Int?
-    identityImage       String
-    registerationNumber String?
-    businessName        String?
-    bio                 String?
-    location            String?
-    servicesOffered     String[]    @default([])
-    profileImage        String?
-    pricing             Json? // 
-    service             String?
-    approvalStatus      ApprovalStatus @default(PENDING)
-
-    specialties         String[]    @default([])
-    portfolioImages     String[]    @default([])
-    serviceRadiusKm     Int? // NEW: Radius in kilometers
-    latitude            Float? // NEW: Latitude coordinate
-    longitude           Float? // NEW: Longitude coordinate
-    createdAt           DateTime    @default(now())
-  }
-
-  model VendorAvailability {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    vendorId  String   @unique
-    days      String[] // e.g., ["Monday", "Wednesday", "Friday"]
-    fromTime  String // e.g., "09:00"
-    toTime    String // e.g., "17:00"
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    vendor User @relation(fields: [vendorId], references: [id])
-  }
-    model Booking {
-      id            String        @id @default(auto()) @map("_id") @db.ObjectId
-      serviceId     String
-      serviceName   String
-      date          DateTime
-      time          String
-      price         Float
-      status        BookingStatus
-      totalAmount   Float
-      paymentStatus PaymentStatus @default(PENDING)
-      paymentMethod String
-      serviceLocation     String?
-      fullAddress         String?
-      landmark            String?
-      referencePhoto      String?
-      specialInstruction  String? 
-      reference           String?
-  
-
-        clientId String?
-  client   User?   @relation("ClientBooking", fields: [clientId], references: [id])
-
-  vendorId String
-  vendor   User @relation("VendorBooking", fields: [vendorId], references: [id])
-        service       VendorService  @relation(fields: [serviceId], references: [id]) 
-
-
-      clientCompleted  Boolean        @default(false)
-      vendorCompleted  Boolean        @default(false)
-
-      reviews Review[] @relation("BookingToReview")
-
-      dispute Dispute? 
-
-
-      createdAt     DateTime    @default(now())
+    generator client {
+      provider = "prisma-client-js"
     }
 
-  model Product {
-    id            String         @id @default(auto()) @map("_id") @db.ObjectId
-    vendorId      String         @db.ObjectId
-    vendor        User           @relation("UserProducts", fields: [vendorId], references: [id])
-    productName   String
-    description   String
-    price         Float
-    qtyAvailable  Int
-    unitsSold     Int            @default(0)
-    status        String         @default("in stock")
-    picture       String
-    cartItems     CartItem[]     @relation("ProductCartItems")
-    wishlistItems WishlistItem[] @relation("ProductWishlistItems")
-    approvalStatus ApprovalStatus @default(PENDING)
+    datasource db {
+      provider = "mongodb"
+      url      = env("DATABASE_URL")
+    }
 
-    createdAt     DateTime       @default(now())
-    updatedAt     DateTime       @updatedAt
+    model User {
+      id               String            @id @default(auto()) @map("_id") @db.ObjectId
+      firstName        String
+      lastName         String
+      email            String            @unique
+      phone            String?
+      password         String
+      location         String?
+      role             Role
+      powerGiven Boolean? @default(false)
 
-   orderItems  OrderItem[]
-    reviews Review[] @relation("ProductToReview")
+      vendorOnboarding VendorOnboarding?
 
+      isEmailVerified      Boolean   @default(false)
+      phoneVerified        Boolean   @default(false)
+      isOtpVerified        Boolean   @default(false)
+      otp                  String?   @db.String
+      otpExpires           DateTime?
+      acceptedPersonalData Boolean   @default(false)
+      name                 String?   @db.String
+      avatar               String?   @db.String
+      bio                  String?   @db.String
+      resetToken           String?   @db.String
+      resetTokenExp        DateTime?
+      notes                String?
+      adminRole            AdminRole?
 
-  }
+      // ✅ Self-relation for who referred the user
+      referredBy   User?   @relation("UserReferrals", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+      referredById String? @db.ObjectId
+      referrals    User[]  @relation("UserReferrals")
 
+      // ✅ Referral code
+      referralCode String @unique
 
-  model Order {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String   @db.ObjectId
-    user      User     @relation(fields: [userId], references: [id])
-    reference String?
-    total     Float
-      items   OrderItem[]
+      withdrawalRequests    WithdrawalRequest[]    @relation("UserWithdrawals")
 
-      vendorIds    String[]  
-     vendorOrders VendorOrder[]
-    createdAt DateTime @default(now())
-  }
-
-  model OrderItem {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-    total     Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
-}
+      fcmToken  String? 
 
 
-  model VendorOrder {
-  id              String         @id @default(auto()) @map("_id") @db.ObjectId
-  orderId         String         @db.ObjectId
-  vendorId        String         @db.ObjectId
-  items           Json           // [{ productId, productName, quantity, price }]
-  total           Float
-  status          VendorOrderStatus @default(PENDING)
-  clientCompleted Boolean        @default(false)
-  vendorCompleted Boolean        @default(false)
-  paidOut         Boolean        @default(false) 
-  vendorOrderDispute VendorOrderDispute?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+      // ✅ Wallet relation
+      walletId String? @unique
+      wallet   Wallet? @relation(fields: [walletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+      // ✅ Bookings & Reviews
+      clientBookings Booking[] @relation("ClientBooking")
+      vendorBookings Booking[] @relation("VendorBooking")
+      clientReviews  Review[]  @relation("ClientReview")
+      vendorReviews  Review[]  @relation("VendorReview")
+
+      // ✅ Vendor services, availability, etc.
+      vendorAvailability VendorAvailability? 
+      vendorServices       VendorService[]
+
+      // ✅ Messages
+      sentMessages     Message[] @relation("SentMessages")
+      receivedMessages Message[] @relation("ReceivedMessages")
+
+      // ✅ Promotions
+      promotions Promotion[] @relation("UserPromotions")
+
+      // ✅ Cart & Wishlist
+      cartItems     CartItem[]     @relation("UserCartItems")
+      wishlistItems WishlistItem[] @relation("UserWishlistItems")
+
+      // ✅ Product ownership
+      products Product[] @relation("UserProducts")
 
 
-  hasDispute      Boolean        @default(false)
-  disputeStatus   DisputeStatus?
 
-  order           Order          @relation(fields: [orderId], references: [id])
-  vendor          User           @relation(fields: [vendorId], references: [id])
-}
+    serviceOffers ServiceOffer[]  @relation("UserServiceOffers")
+    vendorOffers  VendorOffer[]   @relation("UserVendorOffers")
+      orders Order[] 
+      vendorOrders VendorOrder[] 
+      // ✅ Notifications
+      notifications Notification[] @relation("UserNotifications")
 
-model VendorOrderDispute {
-  id             String          @id @default(auto()) @map("_id") @db.ObjectId
-  vendorOrderId  String          @unique @db.ObjectId
-  raisedById     String          @db.ObjectId
-  reason         String
-  disputeImage   String?
-  status         DisputeStatus   @default(PENDING)
-  resolution     String?
-  resolvedAt     DateTime?
-  createdAt      DateTime        @default(now())
-
-  vendorOrder    VendorOrder     @relation(fields: [vendorOrderId], references: [id])
-  raisedBy       User            @relation(fields: [raisedById], references: [id], name: "UserVendorOrderDisputes")
-}
+      // ✅ Referral record model (non-self-relational)
+      referralsMade   Referral[] @relation("ReferredBy")
+      referralsGotten Referral[] @relation("ReferredUser")
 
 
-enum VendorOrderStatus {
-  PENDING
-  PROCESSING
-  DELIVERED
-  COMPLETED
-  REJECTED
-}
+      raisedDisputes Dispute[] @relation("UserDisputes")
 
-  model Notification {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String   @db.ObjectId
-    message   String
-    type      String // e.g., "BOOKING"
-    read      Boolean  @default(false)
-    createdAt DateTime @default(now())
+      adminActions    AdminAction[]
 
-    user User @relation("UserNotifications", fields: [userId], references: [id])
-  }
+      // ✅ Optional location preference
+      preferredLatitude  Float?
+      preferredLongitude Float?
+      preferredRadiusKm  Int?
+      vendorCommissionSetting   VendorCommissionSetting?
+      vendorSubscription VendorSubscription?
+      vendorOrderDisputes  VendorOrderDispute[] @relation("UserVendorOrderDisputes")
 
-model Review {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+      
+    serviceOfferBookingsAsClient ServiceOfferBooking[] @relation("ServiceOfferBookingClient")
+    serviceOfferBookingsAsVendor ServiceOfferBooking[] @relation("ServiceOfferBookingVendor")
+        broadcasts  Broadcast[] @relation("UserToBroadcasts") // optional name for clarity
 
-  bookingId String?  @db.ObjectId 
-  productId   String?  @db.ObjectId
-  serviceId   String?  @db.ObjectId
+      isBanned  Boolean  @default(false)
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
 
-  vendorId    String   @db.ObjectId
-  clientId    String   @db.ObjectId
+    model VendorOnboarding {
+      id                  String      @id @default(auto()) @map("_id") @db.ObjectId
+      userId              String      @unique @db.ObjectId
+      user                User        @relation(fields: [userId], references: [id])
+      serviceType         ServiceType
+      homeServicePrice     Int?
+      identityImage       String
+      registerationNumber String?
+      businessName        String?
+      bio                 String?
+      location            String?
+      servicesOffered     String[]    @default([])
+      profileImage        String?
+      pricing             Json? // 
+      service             String?
+      approvalStatus      ApprovalStatus @default(PENDING)
 
-  rating      Int
-  comment     String?
-  type        ReviewType
-  createdAt   DateTime @default(now())
+      specialties         String[]    @default([])
+      portfolioImages     String[]    @default([])
+      serviceRadiusKm     Int? // NEW: Radius in kilometers
+      latitude            Float? // NEW: Latitude coordinate
+      longitude           Float? // NEW: Longitude coordinate
+      createdAt           DateTime    @default(now())
+    }
 
-  // Relations
-  booking     Booking?        @relation("BookingToReview", fields: [bookingId], references: [id])
-  product     Product?        @relation("ProductToReview", fields: [productId], references: [id])
-  service     VendorService?  @relation("ServiceToReview", fields: [serviceId], references: [id])
-  vendor      User?            @relation("VendorReview", fields: [vendorId], references: [id])
-  client      User?            @relation("ClientReview", fields: [clientId], references: [id])
+    model VendorAvailability {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      vendorId  String   @unique
+      days      String[] // e.g., ["Monday", "Wednesday", "Friday"]
+      fromTime  String // e.g., "09:00"
+      toTime    String // e.g., "17:00"
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
 
-  // ✅ Composite Unique Constraints
+      vendor User @relation(fields: [vendorId], references: [id])
+    }
+      model Booking {
+        id            String        @id @default(auto()) @map("_id") @db.ObjectId
+        serviceId     String
+        serviceName   String
+        date          DateTime
+        time          String
+        price         Float
+        status        BookingStatus
+        totalAmount   Float
+        paymentStatus PaymentStatus @default(PENDING)
+        paymentMethod String
+        serviceLocation     String?
+        fullAddress         String?
+        landmark            String?
+        referencePhoto      String?
+        specialInstruction  String? 
+        reference           String?
+    
 
-}
+          clientId String?
+    client   User?   @relation("ClientBooking", fields: [clientId], references: [id])
 
-
-  enum ReviewType {
-    BOOKING
-    PRODUCT
-    SERVICE
-    VENDOR   
-  }
-
-  enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
-
-  model Promotion {
-    id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-    vendorId           String   @db.ObjectId
-    title              String
-    description        String?
-    discountPercentage Float
-    startDate          DateTime
-    endDate            DateTime
-    isActive           Boolean  @default(true)
-    createdAt          DateTime @default(now())
-    updatedAt          DateTime @updatedAt
-
-    vendor User @relation("UserPromotions", fields: [vendorId], references: [id])
-  }
-
-  model Message {
-    id         String   @id @default(auto()) @map("_id") @db.ObjectId
-    senderId   String   @db.ObjectId
-    receiverId String   @db.ObjectId
-    message    String
-    createdAt  DateTime @default(now())
-    roomId     String?
-    read       Boolean  @default(false)
-
-    likedBy  String[] @default([])
-    sender   User     @relation("SentMessages", fields: [senderId], references: [id])
-    receiver User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  }
-
-  model VendorService {
-    id           String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId     String   @db.ObjectId
-    serviceName  String
-    servicePrice Float
-    serviceImage String
-    description String
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
-
-    vendor User? @relation(fields: [userId], references: [id])
-    reviews Review[] @relation("ServiceToReview")
-    bookings     Booking[] @relation()
+    vendorId String
+    vendor   User @relation("VendorBooking", fields: [vendorId], references: [id])
+          service       VendorService  @relation(fields: [serviceId], references: [id]) 
 
 
-  }
+        clientCompleted  Boolean        @default(false)
+        vendorCompleted  Boolean        @default(false)
 
-  enum ServiceType {
-    IN_SHOP
-    HOME_SERVICE
-  }
+        reviews Review[] @relation("BookingToReview")
 
-  model CartItem {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String   @db.ObjectId
-    productId String   @db.ObjectId
-    quantity  Int      @default(1)
-    createdAt DateTime @default(now())
+        dispute Dispute? 
 
-    user    User    @relation("UserCartItems", fields: [userId], references: [id])
-    product Product @relation("ProductCartItems", fields: [productId], references: [id])
-  }
 
-  model WishlistItem {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String   @db.ObjectId
-    productId String   @db.ObjectId
-    createdAt DateTime @default(now())
-    user      User     @relation("UserWishlistItems", fields: [userId], references: [id])
-    product   Product  @relation("ProductWishlistItems", fields: [productId], references: [id])
-  }
+        createdAt     DateTime    @default(now())
+      }
 
-  model Wallet {
-    id           String        @id @default(auto()) @map("_id") @db.ObjectId
-    balance      Int           @default(0)
-    status       WalletStatus  @default(ACTIVE)
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
-    user         User?
-    userId       String?       @unique
-    likes        Like[]
-    transactions Transaction[]
-  }
+    model Product {
+      id            String         @id @default(auto()) @map("_id") @db.ObjectId
+      vendorId      String         @db.ObjectId
+      vendor        User           @relation("UserProducts", fields: [vendorId], references: [id])
+      productName   String
+      description   String
+      price         Float
+      qtyAvailable  Int
+      unitsSold     Int            @default(0)
+      status        String         @default("in stock")
+      picture       String
+      cartItems     CartItem[]     @relation("ProductCartItems")
+      wishlistItems WishlistItem[] @relation("ProductWishlistItems")
+      approvalStatus ApprovalStatus @default(PENDING)
 
-  // prisma/schema.prisma
-  model Referral {
+      createdAt     DateTime       @default(now())
+      updatedAt     DateTime       @updatedAt
+
+    orderItems  OrderItem[]
+      reviews Review[] @relation("ProductToReview")
+
+
+    }
+
+
+    model Order {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId    String   @db.ObjectId
+      user      User     @relation(fields: [userId], references: [id])
+      reference String?
+      total     Float
+        items   OrderItem[]
+
+        vendorIds    String[]  
+      vendorOrders VendorOrder[]
+      createdAt DateTime @default(now())
+    }
+
+    model OrderItem {
     id String @id @default(auto()) @map("_id") @db.ObjectId
-    amountEarned   Float
-    referredById   String
-    referredUserId String
-    createdAt      DateTime @default(now())
-    referredBy     User     @relation("ReferredBy", fields: [referredById], references: [id])
-    referredUser   User     @relation("ReferredUser", fields: [referredUserId], references: [id])
-  }
 
-  model Transaction {
-    id          String          @id @default(auto()) @map("_id") @db.ObjectId
-    amount      Int
-    description String?
-    type        TransactionType
-    reference   String          @unique
-    status     String?          
-    metadata    Json?  
-    paymentFor   String?
-    createdAt   DateTime        @default(now())
-    walletId    String          @db.ObjectId
-    wallet      Wallet          @relation(fields: [walletId], references: [id])
-  }
-
-  model Like {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    walletId  String   @db.ObjectId
-    wallet    Wallet   @relation(fields: [walletId], references: [id])
-    createdAt DateTime @default(now())
+    orderId   String
+    productId String
+    quantity  Int
+    price     Float
+      total     Float
+    order     Order   @relation(fields: [orderId], references: [id])
+    product   Product @relation(fields: [productId], references: [id])
   }
 
 
-  model Dispute {
+    model VendorOrder {
+    id              String         @id @default(auto()) @map("_id") @db.ObjectId
+    orderId         String         @db.ObjectId
+    vendorId        String         @db.ObjectId
+    items           Json           // [{ productId, productName, quantity, price }]
+    total           Float
+    status          VendorOrderStatus @default(PENDING)
+    clientCompleted Boolean        @default(false)
+    vendorCompleted Boolean        @default(false)
+    paidOut         Boolean        @default(false) 
+    vendorOrderDispute VendorOrderDispute?
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
+
+
+    hasDispute      Boolean        @default(false)
+    disputeStatus   DisputeStatus?
+
+    order           Order          @relation(fields: [orderId], references: [id])
+    vendor          User           @relation(fields: [vendorId], references: [id])
+  }
+
+  model VendorOrderDispute {
+    id             String          @id @default(auto()) @map("_id") @db.ObjectId
+    vendorOrderId  String          @unique @db.ObjectId
+    raisedById     String          @db.ObjectId
+    reason         String
+    disputeImage   String?
+    status         DisputeStatus   @default(PENDING)
+    resolution     String?
+    resolvedAt     DateTime?
+    createdAt      DateTime        @default(now())
+
+    vendorOrder    VendorOrder     @relation(fields: [vendorOrderId], references: [id])
+    raisedBy       User            @relation(fields: [raisedById], references: [id], name: "UserVendorOrderDisputes")
+  }
+
+
+  enum VendorOrderStatus {
+    PENDING
+    PROCESSING
+    DELIVERED
+    COMPLETED
+    REJECTED
+  }
+
+    model Notification {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId    String   @db.ObjectId
+      message   String
+      type      String // e.g., "BOOKING"
+      read      Boolean  @default(false)
+      createdAt DateTime @default(now())
+
+      user User @relation("UserNotifications", fields: [userId], references: [id])
+    }
+
+  model Review {
     id          String   @id @default(auto()) @map("_id") @db.ObjectId
-    bookingId   String    @unique @db.ObjectId
-    raisedById  String  @db.ObjectId 
-    reason      String
-    status      DisputeStatus @default(PENDING)
-    resolution  String?
-    imageUrl      String?   
+
+    bookingId String?  @db.ObjectId 
+    productId   String?  @db.ObjectId
+    serviceId   String?  @db.ObjectId
+
+    vendorId    String   @db.ObjectId
+    clientId    String   @db.ObjectId
+
+    rating      Int
+    comment     String?
+    type        ReviewType
     createdAt   DateTime @default(now())
 
-    raisedBy    User?    @relation("UserDisputes", fields: [raisedById], references: [id])
+    // Relations
+    booking     Booking?        @relation("BookingToReview", fields: [bookingId], references: [id])
+    product     Product?        @relation("ProductToReview", fields: [productId], references: [id])
+    service     VendorService?  @relation("ServiceToReview", fields: [serviceId], references: [id])
+    vendor      User?            @relation("VendorReview", fields: [vendorId], references: [id])
+    client      User?            @relation("ClientReview", fields: [clientId], references: [id])
 
-    booking  Booking  @relation(fields: [bookingId], references: [id])
-  }
-
-  enum DisputeStatus {
-    PENDING
-    RESOLVED
-    REJECTED
-  }
-
-
-  enum PaymentStatus {
-    PENDING
-    LOCKED       // Client's money is deducted and locked until completion or cancellation
-    REFUNDED     // Money refunded back to client wallet
-    COMPLETED    // Vendor paid successfully
-  }
-
-
-  enum Role {
-    CLIENT
-    VENDOR
-    ADMIN
-    SUPERADMIN
-    MODERATOR
-    ANALYST
-    FINANCE_ADMIN
-    CONTENT_MANAGER
-    SUPPORT
-  }
-
-  enum BookingStatus {
-    PENDING
-    ACCEPTED
-    REJECTED
-    CANCELLED
-    COMPLETED
-  }
-
-  enum WalletStatus {
-    ACTIVE
-    SUSPENDED
-  }
-
-  enum TransactionType {
-    CREDIT
-    DEBIT
-    REFUND
-  }
-
-  enum AdminRole {
-    SUPERADMIN
-    ADMIN
-    MODERATOR
-    ANALYST
-    FINANCE_ADMIN
-    CONTENT_MANAGER
-    SUPPORT
-  }
-
-
-  model AdminAction {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    adminId   String   @db.ObjectId
-    action    String
-    details   String?
-    createdAt DateTime @default(now())
-
-    admin     User     @relation(fields: [adminId], references: [id])
-  }
-
-
-  model WithdrawalRequest {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String
-    amount    Float
-    status    WithdrawalStatus @default(PENDING) // e.g., PENDING, APPROVED, REJECTED
-    reason    String?
-    method    String
-    metadata  Json?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-
-      user      User     @relation("UserWithdrawals", fields: [userId], references: [id])
+    // ✅ Composite Unique Constraints
 
   }
 
 
-  enum WithdrawalStatus {
+    enum ReviewType {
+      BOOKING
+      PRODUCT
+      SERVICE
+      VENDOR   
+    }
+
+    enum ApprovalStatus {
     PENDING
     APPROVED
     REJECTED
-    PAID
+    SUSPENDED
   }
 
 
-model ServiceCategory {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+    model Promotion {
+      id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+      vendorId           String   @db.ObjectId
+      title              String
+      description        String?
+      discountPercentage Float
+      startDate          DateTime
+      endDate            DateTime
+      isActive           Boolean  @default(true)
+      createdAt          DateTime @default(now())
+      updatedAt          DateTime @updatedAt
+
+      vendor User @relation("UserPromotions", fields: [vendorId], references: [id])
+    }
+
+    model Message {
+      id         String   @id @default(auto()) @map("_id") @db.ObjectId
+      senderId   String   @db.ObjectId
+      receiverId String   @db.ObjectId
+      message    String
+      createdAt  DateTime @default(now())
+      roomId     String?
+      read       Boolean  @default(false)
+
+      likedBy  String[] @default([])
+      sender   User     @relation("SentMessages", fields: [senderId], references: [id])
+      receiver User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+    }
+
+    model VendorService {
+      id           String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId     String   @db.ObjectId
+      serviceName  String
+      servicePrice Float
+      serviceImage String
+      description String
+      createdAt    DateTime @default(now())
+      updatedAt    DateTime @updatedAt
+
+      vendor User? @relation(fields: [userId], references: [id])
+      reviews Review[] @relation("ServiceToReview")
+      bookings     Booking[] @relation()
 
 
-model ServiceOffer {
-    id                  String         @id @default(auto()) @map("_id") @db.ObjectId
-  clientId      String
-  serviceName   String
-  serviceType   String
-  serviceImage  String
-  offerAmount   Float
-  date          DateTime
-  time          String
-  status        OfferStatus    @default(PENDING)
-  createdAt     DateTime       @default(now())
-  fullAddress   String?
-  landMark      String?
-  latitude      Float?
-  longitude     Float?
-  expiresAt     DateTime?
-  serviceId     String?
-    totalAmount       Float?
-  paymentMethod     String?
-  reference         String?
-  homeLocation      String?
-  landmark          String?
-  referencePhoto    String?
-  specialInstruction String?
+    }
 
-  // Relations
-  client        User?     @relation(fields: [clientId], references: [id], name: "UserServiceOffers")
-  vendorOffers  VendorOffer[]  @relation("AllVendorOffers")
-  acceptedBy    VendorOffer[]  @relation("AcceptedVendorOffers")
-    bookings           ServiceOfferBooking[] 
-}
+    enum ServiceType {
+      IN_SHOP
+      HOME_SERVICE
+    }
 
-model VendorOffer {
-    id                  String         @id @default(auto()) @map("_id") @db.ObjectId
-  vendorId         String
-  price             Float?
-  serviceOfferId   String
-  isAccepted       Boolean        @default(false)
-  createdAt        DateTime       @default(now())
+    model CartItem {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId    String   @db.ObjectId
+      productId String   @db.ObjectId
+      quantity  Int      @default(1)
+      createdAt DateTime @default(now())
 
-  // Relations
-  vendor           User           @relation(fields: [vendorId], references: [id], name: "UserVendorOffers")
-  serviceOffer     ServiceOffer   @relation("AllVendorOffers", fields: [serviceOfferId], references: [id])
-  acceptedOffer    ServiceOffer?  @relation("AcceptedVendorOffers", fields: [serviceOfferId], references: [id])
-}
+      user    User    @relation("UserCartItems", fields: [userId], references: [id])
+      product Product @relation("ProductCartItems", fields: [productId], references: [id])
+    }
 
+    model WishlistItem {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId    String   @db.ObjectId
+      productId String   @db.ObjectId
+      createdAt DateTime @default(now())
+      user      User     @relation("UserWishlistItems", fields: [userId], references: [id])
+      product   Product  @relation("ProductWishlistItems", fields: [productId], references: [id])
+    }
 
-enum OfferStatus {
-  PENDING
-  SELECTED
-  CANCELLED
-  EXPIRED
-}
-model ServiceOfferBooking {
-  id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  client           User            @relation("ServiceOfferBookingClient", fields: [clientId], references: [id])
-  clientId         String          @db.ObjectId
+    model Wallet {
+      id           String        @id @default(auto()) @map("_id") @db.ObjectId
+      balance      Int           @default(0)
+      status       WalletStatus  @default(ACTIVE)
+      createdAt    DateTime      @default(now())
+      updatedAt    DateTime      @updatedAt
+      user         User?
+      userId       String?       @unique
+      likes        Like[]
+      transactions Transaction[]
+    }
 
-  vendor           User            @relation("ServiceOfferBookingVendor", fields: [vendorId], references: [id])
-  vendorId         String          @db.ObjectId
+    // prisma/schema.prisma
+    model Referral {
+      id String @id @default(auto()) @map("_id") @db.ObjectId
+      amountEarned   Float
+      referredById   String
+      referredUserId String
+      createdAt      DateTime @default(now())
+      referredBy     User     @relation("ReferredBy", fields: [referredById], references: [id])
+      referredUser   User     @relation("ReferredUser", fields: [referredUserId], references: [id])
+    }
 
-  serviceOfferId   String
-  serviceOffer     ServiceOffer    @relation(fields: [serviceOfferId], references: [id])
+    model Transaction {
+      id          String          @id @default(auto()) @map("_id") @db.ObjectId
+      amount      Int
+      description String?
+      type        TransactionType
+      reference   String          @unique
+      status     String?          
+      metadata    Json?  
+      paymentFor   String?
+      createdAt   DateTime        @default(now())
+      walletId    String          @db.ObjectId
+      wallet      Wallet          @relation(fields: [walletId], references: [id])
+    }
 
-  serviceName      String
-  price            Float
-  totalAmount      Float
-  time             String
-  date             DateTime
-
-  paymentMethod    String
-  paymentStatus    PaymentStatus
-  reference        String
-  referencePhoto   String?
-
-  clientCompleted  Boolean         @default(false)
-  vendorCompleted  Boolean         @default(false)
-
-  status           BookingStatus   @default(PENDING)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-}
+    model Like {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      walletId  String   @db.ObjectId
+      wallet    Wallet   @relation(fields: [walletId], references: [id])
+      createdAt DateTime @default(now())
+    }
 
 
-model Broadcast {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  message     String
-  audience    BroadcastAudience
-  channel     BroadcastChannel
-  createdById String      @db.ObjectId
-  createdBy   User     @relation("UserToBroadcasts", fields: [createdById], references: [id])
-  createdAt   DateTime    @default(now())
-  sentCount   Int         @default(0)
-}
+    model Dispute {
+      id          String   @id @default(auto()) @map("_id") @db.ObjectId
+      bookingId   String    @unique @db.ObjectId
+      raisedById  String  @db.ObjectId 
+      reason      String
+      status      DisputeStatus @default(PENDING)
+      resolution  String?
+      imageUrl      String?   
+      createdAt   DateTime @default(now())
 
-enum BroadcastAudience {
-  CLIENT
-  VENDOR
-  BOTH
- 
-}
+      raisedBy    User?    @relation("UserDisputes", fields: [raisedById], references: [id])
 
-enum BroadcastChannel {
-  EMAIL
-  PUSH_NOTIFICATION
-}
+      booking  Booking  @relation(fields: [bookingId], references: [id])
+    }
+
+    enum DisputeStatus {
+      PENDING
+      RESOLVED
+      REJECTED
+    }
 
 
-model VendorCommissionSetting {
-  id               String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String   @unique 
-  commissionRate   Float    // Percentage e.g., 0.1 for 10%
-  deductionStart   DeductionStartOption // Enum for start time (1 week, 2 weeks, 1 month)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user             User     @relation(fields: [userId], references: [id])
-}
-
-enum DeductionStartOption {
-  AFTER_FIRST_WEEK
-  AFTER_SECOND_WEEK
-  AFTER_FIRST_MONTH
-}
+    enum PaymentStatus {
+      PENDING
+      LOCKED       // Client's money is deducted and locked until completion or cancellation
+      REFUNDED     // Money refunded back to client wallet
+      COMPLETED    // Vendor paid successfully
+    }
 
 
-model VendorSubscription {
-  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId                 String       @unique @db.ObjectId
-  user                   User         @relation(fields: [userId], references: [id])
-  serviceType            ServiceType  @default(IN_SHOP)
-  isPaid                 Boolean      @default(false)
-  paidAt                 DateTime?
-  expiresAt              DateTime?
-  planName               String?
-  amount                 Float?
-  subscriptionStartDate  DateTime?    // Calculated from onboarding date + deduction option
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-}
+    enum Role {
+      CLIENT
+      VENDOR
+      ADMIN
+      SUPERADMIN
+      MODERATOR
+      ANALYST
+      FINANCE_ADMIN
+      CONTENT_MANAGER
+      SUPPORT
+    }
+
+    enum BookingStatus {
+      PENDING
+      ACCEPTED
+      REJECTED
+      CANCELLED
+      COMPLETED
+    }
+
+    enum WalletStatus {
+      ACTIVE
+      SUSPENDED
+    }
+
+    enum TransactionType {
+      CREDIT
+      DEBIT
+      REFUND
+    }
+
+    enum AdminRole {
+      SUPERADMIN
+      ADMIN
+      MODERATOR
+      ANALYST
+      FINANCE_ADMIN
+      CONTENT_MANAGER
+      SUPPORT
+    }
+
+
+    model AdminAction {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      adminId   String   @db.ObjectId
+      action    String
+      details   String?
+      createdAt DateTime @default(now())
+
+      admin     User     @relation(fields: [adminId], references: [id])
+    }
+
+
+    model WithdrawalRequest {
+      id        String   @id @default(auto()) @map("_id") @db.ObjectId
+      userId    String
+      amount    Float
+      status    WithdrawalStatus @default(PENDING) // e.g., PENDING, APPROVED, REJECTED
+      reason    String?
+      method    String
+      metadata  Json?
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+
+        user      User     @relation("UserWithdrawals", fields: [userId], references: [id])
+
+    }
+
+
+    enum WithdrawalStatus {
+      PENDING
+      APPROVED
+      REJECTED
+      PAID
+    }
+
+
+  model ServiceCategory {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    name      String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+  }
+
+
+  model ServiceOffer {
+      id                  String         @id @default(auto()) @map("_id") @db.ObjectId
+    clientId      String
+    serviceName   String
+    serviceType   String
+    serviceImage  String
+    offerAmount   Float
+    date          DateTime
+    time          String
+    status        OfferStatus    @default(PENDING)
+    createdAt     DateTime       @default(now())
+    fullAddress   String?
+    landMark      String?
+    latitude      Float?
+    longitude     Float?
+    expiresAt     DateTime?
+    serviceId     String?
+      totalAmount       Float?
+    paymentMethod     String?
+    reference         String?
+    homeLocation      String?
+    landmark          String?
+    referencePhoto    String?
+    specialInstruction String?
+
+    // Relations
+    client        User?     @relation(fields: [clientId], references: [id], name: "UserServiceOffers")
+    vendorOffers  VendorOffer[]  @relation("AllVendorOffers")
+    acceptedBy    VendorOffer[]  @relation("AcceptedVendorOffers")
+      bookings           ServiceOfferBooking[] 
+  }
+
+  model VendorOffer {
+      id                  String         @id @default(auto()) @map("_id") @db.ObjectId
+    vendorId         String
+    price             Float?
+    serviceOfferId   String
+    isAccepted       Boolean        @default(false)
+    createdAt        DateTime       @default(now())
+
+    // Relations
+    vendor           User           @relation(fields: [vendorId], references: [id], name: "UserVendorOffers")
+    serviceOffer     ServiceOffer   @relation("AllVendorOffers", fields: [serviceOfferId], references: [id])
+    acceptedOffer    ServiceOffer?  @relation("AcceptedVendorOffers", fields: [serviceOfferId], references: [id])
+  }
+
+
+  enum OfferStatus {
+    PENDING
+    SELECTED
+    CANCELLED
+    EXPIRED
+  }
+  model ServiceOfferBooking {
+    id               String          @id @default(auto()) @map("_id") @db.ObjectId
+    client           User            @relation("ServiceOfferBookingClient", fields: [clientId], references: [id])
+    clientId         String          @db.ObjectId
+
+    vendor           User            @relation("ServiceOfferBookingVendor", fields: [vendorId], references: [id])
+    vendorId         String          @db.ObjectId
+
+    serviceOfferId   String
+    serviceOffer     ServiceOffer    @relation(fields: [serviceOfferId], references: [id])
+
+    serviceName      String
+    price            Float
+    totalAmount      Float
+    time             String
+    date             DateTime
+
+    paymentMethod    String
+    paymentStatus    PaymentStatus
+    reference        String
+    referencePhoto   String?
+
+    clientCompleted  Boolean         @default(false)
+    vendorCompleted  Boolean         @default(false)
+
+    status           BookingStatus   @default(PENDING)
+    createdAt        DateTime        @default(now())
+    updatedAt        DateTime        @updatedAt
+  }
+
+
+  model Broadcast {
+    id          String      @id @default(auto()) @map("_id") @db.ObjectId
+    title       String
+    message     String
+    audience    BroadcastAudience
+    channel     BroadcastChannel
+    createdById String      @db.ObjectId
+    createdBy   User     @relation("UserToBroadcasts", fields: [createdById], references: [id])
+    createdAt   DateTime    @default(now())
+    sentCount   Int         @default(0)
+  }
+
+  enum BroadcastAudience {
+    CLIENT
+    VENDOR
+    BOTH
+  
+  }
+
+  enum BroadcastChannel {
+    EMAIL
+    PUSH_NOTIFICATION
+  }
+
+
+  model VendorCommissionSetting {
+    id               String  @id @default(auto()) @map("_id") @db.ObjectId
+    userId           String   @unique 
+    commissionRate   Float    // Percentage e.g., 0.1 for 10%
+    deductionStart   DeductionStartOption // Enum for start time (1 week, 2 weeks, 1 month)
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+
+    user             User     @relation(fields: [userId], references: [id])
+  }
+
+  enum DeductionStartOption {
+    AFTER_FIRST_WEEK
+    AFTER_SECOND_WEEK
+    AFTER_FIRST_MONTH
+  }
+
+
+  model VendorSubscription {
+    id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+    userId                 String       @unique @db.ObjectId
+    user                   User         @relation(fields: [userId], references: [id])
+    serviceType            ServiceType  @default(IN_SHOP)
+    isPaid                 Boolean      @default(false)
+    paidAt                 DateTime?
+    expiresAt              DateTime?
+    planName               String?
+    amount                 Float?
+    subscriptionStartDate  DateTime?    // Calculated from onboarding date + deduction option
+    createdAt              DateTime     @default(now())
+    updatedAt              DateTime     @updatedAt
+  }
