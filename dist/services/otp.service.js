@@ -9,23 +9,10 @@ const prisma_1 = __importDefault(require("../config/prisma"));
 const email_helper_1 = require("../helpers/email.helper");
 const sms_service_1 = require("./sms.service");
 const sendOtpService = async (identifier) => {
-    const user = await prisma_1.default.user.findFirst({
-        where: {
-            OR: [{ email: identifier }, { phone: identifier }],
-        },
-    });
-    if (!user)
-        throw new Error("User not found");
     const fourDigitotp = Math.floor(1000 + Math.random() * 9000).toString();
     console.log(`✅ OTP Generated: ${fourDigitotp} | Length: ${fourDigitotp.length}`);
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-    await prisma_1.default.user.update({
-        where: { id: user.id },
-        data: { otp: fourDigitotp, otpExpires },
-    });
-    // 📨 Email
-    if (user.email === identifier) {
-        await (0, email_helper_1.sendMail)(user.email, "🧾 Your Sharplook OTP Code", `
+    if (identifier.includes("@")) {
+        await (0, email_helper_1.sendMail)(identifier, "🧾 Your Sharplook OTP Code", `
         <div style="font-family: 'Helvetica Neue', sans-serif; background-color: #f4f4f5; padding: 24px; border-radius: 12px; color: #111827;">
           <h2 style="color: #0f172a; font-size: 22px; margin-bottom: 8px;">Welcome to <span style="color: #3b82f6;">Sharplook</span> 👔</h2>
           <p style="font-size: 16px; line-height: 1.5;">Your one-time passcode is:</p>
@@ -33,16 +20,12 @@ const sendOtpService = async (identifier) => {
             ${fourDigitotp}
           </p>
           <p style="font-size: 14px; color: #4b5563;">This code will expire in <strong>10 minutes</strong>.</p>
-          <hr style="margin: 20px 0; border: none; border-top: 1px solid #d1d5db;" />
-          <p style="font-size: 13px; color: #6b7280;">
-            Stay sharp. Stay styled. Reach out if you need anything – we’ve got your back. 💬
-          </p>
         </div>
       `);
     }
-    // 📱 Phone
-    else if (user.phone === identifier) {
-        await (0, sms_service_1.sendSmS)(user.phone, Number(fourDigitotp));
+    // 📱 Otherwise treat as phone
+    else {
+        await (0, sms_service_1.sendSmS)(identifier, Number(fourDigitotp));
     }
     console.log(`✅ OTP sent to ${identifier}: ${fourDigitotp}`);
 };

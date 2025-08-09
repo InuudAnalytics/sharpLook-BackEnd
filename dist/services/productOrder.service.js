@@ -253,15 +253,17 @@ const updateVendorOrderStatus = async (vendorOrderId, status) => {
     });
 };
 exports.updateVendorOrderStatus = updateVendorOrderStatus;
-const completeVendorOrder = async (vendorOrderIds, // now an array
-userId, role) => {
+const completeVendorOrder = async (vendorOrderIds, userId, role) => {
     if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0) {
         throw new Error("vendorOrderIds must be a non-empty array");
     }
     // Fetch all vendor orders
     const vendorOrders = await prisma_1.default.vendorOrder.findMany({
         where: { id: { in: vendorOrderIds } },
-        include: { vendor: true, order: true },
+        include: {
+            vendor: { include: { wallet: true } },
+            order: true
+        },
     });
     if (vendorOrders.length !== vendorOrderIds.length) {
         throw new Error("One or more vendor orders not found");
@@ -275,49 +277,67 @@ userId, role) => {
             .map(d => d.vendorOrderId)
             .join(", ")}`);
     }
-    return prisma_1.default.$transaction(async (tx) => {
-        const updatedOrders = [];
-        for (const order of vendorOrders) {
-            const updated = await tx.vendorOrder.update({
-                where: { id: order.id },
-                data: {
-                    clientCompleted: role === "CLIENT" ? true : order.clientCompleted,
-                    vendorCompleted: role === "VENDOR"
-                        ? true
-                        : role === "CLIENT"
-                            ? true // auto mark vendor complete if client completes
-                            : order.vendorCompleted,
-                },
-            });
-            // If both completed and not paid, pay vendor
-            if (updated.clientCompleted && updated.vendorCompleted && !updated.paidOut) {
-                const vendorWallet = await tx.wallet.findUnique({
-                    where: { userId: order.vendorId },
-                });
-                if (!vendorWallet)
-                    throw new Error("Vendor wallet not found");
-                await tx.wallet.update({
+    // STEP 1 & 2 combined: Mark delivered + process payout
+    const updatedOrders = await Promise.all(vendorOrders.map(async (order) => {
+        // If client marks delivered, mark both sides complete
+        const clientCompleted = role === "CLIENT" ? true : order.clientCompleted;
+        const vendorCompleted = role === "CLIENT"
+            ? true
+            : role === "VENDOR"
+                ? true
+                : order.vendorCompleted;
+        // Only trigger payout if not already paid
+        let paidOut = order.paidOut;
+        if (clientCompleted && vendorCompleted && !paidOut) {
+            const vendorWallet = order.vendor.wallet;
+            if (!vendorWallet)
+                throw new Error("Vendor wallet not found");
+            await prisma_1.default.$transaction([
+                prisma_1.default.wallet.update({
                     where: { id: vendorWallet.id },
-                    data: { balance: { increment: updated.total } },
-                });
-                await tx.transaction.create({
+                    data: { balance: { increment: order.total } },
+                }),
+                prisma_1.default.transaction.create({
                     data: {
-                        amount: updated.total,
+                        amount: order.total,
                         type: "CREDIT",
-                        reference: `ORDER-PAYOUT-${updated.id}`,
+                        reference: `ORDER-PAYOUT-${order.id}`,
                         description: `Payout for order ${order.order.reference ?? order.order.id}`,
                         walletId: vendorWallet.id,
                         status: "SUCCESS",
                     },
-                });
-                await tx.vendorOrder.update({
-                    where: { id: updated.id },
-                    data: { paidOut: true, status: "DELIVERED" },
-                });
-            }
-            updatedOrders.push(updated);
+                }),
+                prisma_1.default.vendorOrder.update({
+                    where: { id: order.id },
+                    data: {
+                        clientCompleted,
+                        vendorCompleted,
+                        status: "DELIVERED",
+                        paidOut: true,
+                    },
+                }),
+            ]);
+            paidOut = true;
         }
-        return updatedOrders;
-    });
+        else {
+            // Just mark as delivered without payout
+            await prisma_1.default.vendorOrder.update({
+                where: { id: order.id },
+                data: {
+                    clientCompleted,
+                    vendorCompleted,
+                    status: "DELIVERED",
+                },
+            });
+        }
+        return {
+            ...order,
+            clientCompleted,
+            vendorCompleted,
+            paidOut,
+            status: "DELIVERED",
+        };
+    }));
+    return updatedOrders;
 };
 exports.completeVendorOrder = completeVendorOrder;
