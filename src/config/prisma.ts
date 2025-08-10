@@ -1,19 +1,18 @@
+import { PrismaClient } from "@prisma/client";
 
-import { PrismaClient } from "@prisma/client"
+const prisma = new PrismaClient();
 
-const prisma = new PrismaClient()
-
-
-async function connectDB() {
+export async function connectDB() {
+  if (process.env.NODE_ENV === "test") {
+    return; // ✅ Skip DB connection in tests
+  }
   try {
-    await prisma.$connect()
-    console.log("✅ Database is connected")
+    await prisma.$connect();
+    console.log("✅ Database is connected");
   } catch (error) {
-    console.error("❌ Failed to connect to Database:", error)
-    process.exit(1)
+    console.error("❌ Database connection failed", error);
+    process.exit(1);
   }
 }
 
-connectDB()
-
-export default prisma
+export default prisma;

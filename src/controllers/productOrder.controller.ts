@@ -6,7 +6,7 @@ import { success } from "zod";
 
 export const checkoutCart = async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const { reference } = req.body;
+  const { reference } = req.body || {};
 
   try {
     const order = await ProductOrderService.checkoutCart(userId!, reference);

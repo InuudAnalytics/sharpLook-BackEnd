@@ -1,0 +1,23 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const http_1 = __importDefault(require("http"));
+const socket_io_1 = require("socket.io");
+const app_1 = __importDefault(require("./app"));
+const socket_handlers_1 = require("./sockets/socket.handlers");
+const PORT = parseInt(process.env.PORT || '4000', 10);
+const server = http_1.default.createServer(app_1.default);
+const io = new socket_io_1.Server(server, {
+    cors: {
+        origin: "*", // You can restrict this to specific origins in production
+        methods: ["GET", "POST"],
+    },
+});
+// Register socket event handlers
+(0, socket_handlers_1.registerSocketHandlers)(io);
+// Start server on 0.0.0.0 to allow external access
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+});
