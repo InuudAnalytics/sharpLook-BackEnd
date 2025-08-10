@@ -64,11 +64,26 @@ export const resolveDispute = async (req: Request, res: Response) => {
   }
 };
 
+
+
 export const createVendorOrderDisputeHandler = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { reason, vendorOrderIds } = req.body; 
-    if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0) {
+
+    const { reason, vendorOrderIds } = req.body;
+
+    if (!reason || !vendorOrderIds) {
+      return res.status(400).json({ error: "Missing reason or vendorOrderIds" });
+    }
+
+    let parsedVendorOrderIds: string[];
+    try {
+      parsedVendorOrderIds = JSON.parse(vendorOrderIds);
+    } catch (e) {
+      return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
+    }
+
+    if (!Array.isArray(parsedVendorOrderIds) || parsedVendorOrderIds.length === 0) {
       return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
     }
 
@@ -79,7 +94,7 @@ export const createVendorOrderDisputeHandler = async (req: Request, res: Respons
     }
 
     const disputes = await createVendorOrderDispute(
-      vendorOrderIds, // array
+      parsedVendorOrderIds,
       userId,
       reason,
       disputeImage
@@ -91,8 +106,8 @@ export const createVendorOrderDisputeHandler = async (req: Request, res: Respons
       data: disputes,
     });
   } catch (err: any) {
-    console.error(err);
-    return res.status(400).json({ error: err.message });
+    console.error("Dispute creation error:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -102,7 +117,7 @@ export const getAllVendorOrderDisputesHandler = async (req: Request, res: Respon
     const disputes = await getAllVendorOrderDisputes();
     return res.status(200).json(disputes);
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch disputes" });
+    return res.status(500).json({ error: "Failed to fetch disputes" , message: err});
   }
 };
 

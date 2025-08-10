@@ -90,7 +90,17 @@ const createVendorOrderDisputeHandler = async (req, res) => {
     try {
         const userId = req.user.id;
         const { reason, vendorOrderIds } = req.body;
-        if (!Array.isArray(vendorOrderIds) || vendorOrderIds.length === 0) {
+        if (!reason || !vendorOrderIds) {
+            return res.status(400).json({ error: "Missing reason or vendorOrderIds" });
+        }
+        let parsedVendorOrderIds;
+        try {
+            parsedVendorOrderIds = JSON.parse(vendorOrderIds);
+        }
+        catch (e) {
+            return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
+        }
+        if (!Array.isArray(parsedVendorOrderIds) || parsedVendorOrderIds.length === 0) {
             return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
         }
         let disputeImage;
@@ -98,8 +108,7 @@ const createVendorOrderDisputeHandler = async (req, res) => {
             const result = await (0, cloudinary_1.default)(req.file.buffer, "hairdesign/vendors");
             disputeImage = result.secure_url;
         }
-        const disputes = await (0, dispute_service_1.createVendorOrderDispute)(vendorOrderIds, // array
-        userId, reason, disputeImage);
+        const disputes = await (0, dispute_service_1.createVendorOrderDispute)(parsedVendorOrderIds, userId, reason, disputeImage);
         return res.status(201).json({
             success: true,
             message: "Dispute(s) created successfully",
@@ -107,8 +116,8 @@ const createVendorOrderDisputeHandler = async (req, res) => {
         });
     }
     catch (err) {
-        console.error(err);
-        return res.status(400).json({ error: err.message });
+        console.error("Dispute creation error:", err);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
 exports.createVendorOrderDisputeHandler = createVendorOrderDisputeHandler;
@@ -118,7 +127,7 @@ const getAllVendorOrderDisputesHandler = async (req, res) => {
         return res.status(200).json(disputes);
     }
     catch (err) {
-        return res.status(500).json({ error: "Failed to fetch disputes" });
+        return res.status(500).json({ error: "Failed to fetch disputes", message: err });
     }
 };
 exports.getAllVendorOrderDisputesHandler = getAllVendorOrderDisputesHandler;
