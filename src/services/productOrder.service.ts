@@ -219,6 +219,7 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
         select: {
           id: true,          // ✅ Needed for completion
           vendorId: true,
+          hasDispute: true,
           status: true,
         },
       },
@@ -240,7 +241,8 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
         productImage: item.product.picture,
         quantity: item.quantity,
         price: item.price,
-        vendorOrderId: vendorOrder?.id || null, // ✅ Added here
+        vendorOrderId: vendorOrder?.id || null,
+        hasDispute: vendorOrder?.hasDispute,
         vendor: {
           id: item.product.vendor.id,
           firstName: item.product.vendor.firstName,

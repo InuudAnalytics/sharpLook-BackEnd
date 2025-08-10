@@ -189,6 +189,7 @@ const getClientOrdersWithVendors = async (clientId) => {
                 select: {
                     id: true, // ✅ Needed for completion
                     vendorId: true,
+                    hasDispute: true,
                     status: true,
                 },
             },
@@ -206,7 +207,8 @@ const getClientOrdersWithVendors = async (clientId) => {
                 productImage: item.product.picture,
                 quantity: item.quantity,
                 price: item.price,
-                vendorOrderId: vendorOrder?.id || null, // ✅ Added here
+                vendorOrderId: vendorOrder?.id || null,
+                hasDispute: vendorOrder?.hasDispute,
                 vendor: {
                     id: item.product.vendor.id,
                     firstName: item.product.vendor.firstName,
