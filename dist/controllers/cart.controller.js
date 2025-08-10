@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCartItemQuantity = exports.removeProductFromCart = exports.getMyCart = exports.addProductToCart = void 0;
+exports.updateMultipleCartItems = exports.removeProductFromCart = exports.getMyCart = exports.addProductToCart = void 0;
 const CartService = __importStar(require("../services/cart.service"));
 const addProductToCart = async (req, res) => {
     const userId = req.user.id;
@@ -96,23 +96,32 @@ const removeProductFromCart = async (req, res) => {
     }
 };
 exports.removeProductFromCart = removeProductFromCart;
-const updateCartItemQuantity = async (req, res) => {
+const updateMultipleCartItems = async (req, res) => {
     const userId = req.user.id;
-    const { quantity, productId } = req.body;
-    if (typeof quantity !== 'number' || quantity < 0) {
+    const updates = req.body.items;
+    if (!Array.isArray(updates) || updates.length === 0) {
         return res.status(400).json({
             success: false,
-            message: "Quantity must be a non-negative number"
+            message: "No cart items provided for update",
         });
     }
     try {
-        const updatedItem = await CartService.updateCartQuantity(userId, productId, quantity);
+        const result = await CartService.updateMultipleCartItems(userId, updates);
+        if (result.errors.length > 0) {
+            return res.status(207).json({
+                success: false,
+                message: "Some cart items could not be updated",
+                data: {
+                    updated: result.updated,
+                    removed: result.removed,
+                    errors: result.errors,
+                },
+            });
+        }
         return res.status(200).json({
             success: true,
-            message: quantity === 0
-                ? "Product removed from cart"
-                : "Cart quantity updated successfully",
-            data: updatedItem || null,
+            message: "Cart updated successfully",
+            data: result.updated,
         });
     }
     catch (err) {
@@ -122,4 +131,4 @@ const updateCartItemQuantity = async (req, res) => {
         });
     }
 };
-exports.updateCartItemQuantity = updateCartItemQuantity;
+exports.updateMultipleCartItems = updateMultipleCartItems;

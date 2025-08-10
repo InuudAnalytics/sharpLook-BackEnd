@@ -67,45 +67,94 @@ export const removeFromCart = async (userId: string, productId: string) => {
   })
 }
 
-
-export const updateCartQuantity = async (
+export const updateMultipleCartItems = async (
   userId: string,
-  productId: string,
-  quantity: number
+  updates: Array<{ productId: string; quantity: number }>
 ) => {
-  if (quantity <= 0) {
-    await prisma.cartItem.deleteMany({
-      where: { userId, productId },
-    });
-    return null;
-  }
+  const productIds = updates.map((item) => item.productId);
 
-  // 1. Get product and cart item
-  const [product, existingItem] = await Promise.all([
-    prisma.product.findUnique({ where: { id: productId } }),
-    prisma.cartItem.findFirst({ where: { userId, productId } }),
+  // Fetch all relevant products and cart items
+  const [products, cartItems] = await Promise.all([
+    prisma.product.findMany({
+      where: { id: { in: productIds } },
+    }),
+    prisma.cartItem.findMany({
+      where: {
+        userId,
+        productId: { in: productIds },
+      },
+    }),
   ]);
 
-  if (!product) {
-    throw new NotFoundError("Product not found");
+  const productMap = new Map(products.map((p) => [p.id, p]));
+  const cartItemMap = new Map(cartItems.map((ci) => [ci.productId, ci]));
+
+  const updatesToApply = [];
+  const updated: any[] = [];
+  const removed: string[] = [];
+  const errors: Array<{ productId: string; error: string }> = [];
+
+  for (const { productId, quantity } of updates) {
+    const product = productMap.get(productId);
+    const cartItem = cartItemMap.get(productId);
+
+    if (!product) {
+      errors.push({ productId, error: 'Product not found' });
+      continue;
+    }
+
+    if (product.approvalStatus !== ApprovalStatus.APPROVED) {
+      errors.push({ productId, error: 'Product is not approved' });
+      continue;
+    }
+
+    if (quantity > product.qtyAvailable) {
+      errors.push({
+        productId,
+        error: `Only ${product.qtyAvailable} in stock`,
+      });
+      continue;
+    }
+
+    if (quantity <= 0) {
+      if (cartItem) {
+        updatesToApply.push(
+          prisma.cartItem
+            .delete({ where: { id: cartItem.id } })
+            .then(() => removed.push(productId))
+        );
+      }
+    } else if (cartItem) {
+      updatesToApply.push(
+        prisma.cartItem
+          .update({
+            where: { id: cartItem.id },
+            data: { quantity },
+          })
+          .then((item) => updated.push(item))
+      );
+    } else {
+      updatesToApply.push(
+        prisma.cartItem
+          .create({
+            data: {
+              userId,
+              productId,
+              quantity,
+            },
+          })
+          .then((item) => updated.push(item))
+      );
+    }
   }
 
-  if (!existingItem) {
-    throw new NotFoundError("Item not found in cart");
-  }
+  // Wait for all Prisma actions to finish
+  await Promise.all(updatesToApply);
 
-  if (product.approvalStatus !== ApprovalStatus.APPROVED) {
-    throw new ForbiddenError("Product is not approved for sale");
-  }
-
-  if (quantity > product.qtyAvailable) {
-    throw new BadRequestError(`Only ${product.qtyAvailable} in stock`);
-  }
-
-  // 2. Update quantity
-  return await prisma.cartItem.update({
-    where: { id: existingItem.id },
-    data: { quantity },
-    include: { product: true },
-  });
+  return {
+    updated,
+    removed,
+    errors,
+  };
 };
+

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCartQuantity = exports.removeFromCart = exports.getUserCart = exports.addToCart = void 0;
+exports.updateMultipleCartItems = exports.removeFromCart = exports.getUserCart = exports.addToCart = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const client_1 = require("@prisma/client");
 const errors_1 = require("../utils/errors"); // adjust path
@@ -57,35 +57,77 @@ const removeFromCart = async (userId, productId) => {
     });
 };
 exports.removeFromCart = removeFromCart;
-const updateCartQuantity = async (userId, productId, quantity) => {
-    if (quantity <= 0) {
-        await prisma_1.default.cartItem.deleteMany({
-            where: { userId, productId },
-        });
-        return null;
-    }
-    // 1. Get product and cart item
-    const [product, existingItem] = await Promise.all([
-        prisma_1.default.product.findUnique({ where: { id: productId } }),
-        prisma_1.default.cartItem.findFirst({ where: { userId, productId } }),
+const updateMultipleCartItems = async (userId, updates) => {
+    const productIds = updates.map((item) => item.productId);
+    // Fetch all relevant products and cart items
+    const [products, cartItems] = await Promise.all([
+        prisma_1.default.product.findMany({
+            where: { id: { in: productIds } },
+        }),
+        prisma_1.default.cartItem.findMany({
+            where: {
+                userId,
+                productId: { in: productIds },
+            },
+        }),
     ]);
-    if (!product) {
-        throw new errors_1.NotFoundError("Product not found");
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    const cartItemMap = new Map(cartItems.map((ci) => [ci.productId, ci]));
+    const updatesToApply = [];
+    const updated = [];
+    const removed = [];
+    const errors = [];
+    for (const { productId, quantity } of updates) {
+        const product = productMap.get(productId);
+        const cartItem = cartItemMap.get(productId);
+        if (!product) {
+            errors.push({ productId, error: 'Product not found' });
+            continue;
+        }
+        if (product.approvalStatus !== client_1.ApprovalStatus.APPROVED) {
+            errors.push({ productId, error: 'Product is not approved' });
+            continue;
+        }
+        if (quantity > product.qtyAvailable) {
+            errors.push({
+                productId,
+                error: `Only ${product.qtyAvailable} in stock`,
+            });
+            continue;
+        }
+        if (quantity <= 0) {
+            if (cartItem) {
+                updatesToApply.push(prisma_1.default.cartItem
+                    .delete({ where: { id: cartItem.id } })
+                    .then(() => removed.push(productId)));
+            }
+        }
+        else if (cartItem) {
+            updatesToApply.push(prisma_1.default.cartItem
+                .update({
+                where: { id: cartItem.id },
+                data: { quantity },
+            })
+                .then((item) => updated.push(item)));
+        }
+        else {
+            updatesToApply.push(prisma_1.default.cartItem
+                .create({
+                data: {
+                    userId,
+                    productId,
+                    quantity,
+                },
+            })
+                .then((item) => updated.push(item)));
+        }
     }
-    if (!existingItem) {
-        throw new errors_1.NotFoundError("Item not found in cart");
-    }
-    if (product.approvalStatus !== client_1.ApprovalStatus.APPROVED) {
-        throw new errors_1.ForbiddenError("Product is not approved for sale");
-    }
-    if (quantity > product.qtyAvailable) {
-        throw new errors_1.BadRequestError(`Only ${product.qtyAvailable} in stock`);
-    }
-    // 2. Update quantity
-    return await prisma_1.default.cartItem.update({
-        where: { id: existingItem.id },
-        data: { quantity },
-        include: { product: true },
-    });
+    // Wait for all Prisma actions to finish
+    await Promise.all(updatesToApply);
+    return {
+        updated,
+        removed,
+        errors,
+    };
 };
-exports.updateCartQuantity = updateCartQuantity;
+exports.updateMultipleCartItems = updateMultipleCartItems;

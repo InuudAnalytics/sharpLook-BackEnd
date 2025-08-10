@@ -64,28 +64,38 @@ export const removeProductFromCart = async (req: Request, res: Response) => {
     });
   }
 };
-
-export const updateCartItemQuantity = async (req: Request, res: Response) => {
+export const updateMultipleCartItems = async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { quantity, productId } = req.body;
+  const updates: Array<{ productId: string; quantity: number }> = req.body.items;
 
-  if (typeof quantity !== 'number' || quantity < 0) {
+  if (!Array.isArray(updates) || updates.length === 0) {
     return res.status(400).json({
       success: false,
-      message: "Quantity must be a non-negative number"
+      message: "No cart items provided for update",
     });
   }
 
   try {
-    const updatedItem = await CartService.updateCartQuantity(userId, productId, quantity);
-    
+    const result = await CartService.updateMultipleCartItems(userId, updates);
+
+    if (result.errors.length > 0) {
+      return res.status(207).json({ // 207: Multi-Status (partial success)
+        success: false,
+        message: "Some cart items could not be updated",
+        data: {
+          updated: result.updated,
+          removed: result.removed,
+          errors: result.errors,
+        },
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: quantity === 0
-        ? "Product removed from cart"
-        : "Cart quantity updated successfully",
-      data: updatedItem || null,
+      message: "Cart updated successfully",
+      data: result.updated,
     });
+
   } catch (err: any) {
     return res.status(500).json({
       success: false,
@@ -93,3 +103,5 @@ export const updateCartItemQuantity = async (req: Request, res: Response) => {
     });
   }
 };
+
+
