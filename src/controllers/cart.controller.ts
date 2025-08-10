@@ -65,3 +65,31 @@ export const removeProductFromCart = async (req: Request, res: Response) => {
   }
 };
 
+export const updateCartItemQuantity = async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { quantity, productId } = req.body;
+
+  if (typeof quantity !== 'number' || quantity < 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Quantity must be a non-negative number"
+    });
+  }
+
+  try {
+    const updatedItem = await CartService.updateCartQuantity(userId, productId, quantity);
+    
+    return res.status(200).json({
+      success: true,
+      message: quantity === 0
+        ? "Product removed from cart"
+        : "Cart quantity updated successfully",
+      data: updatedItem || null,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

@@ -41,4 +41,5 @@ const router = (0, express_1.Router)();
 router.post("/addProductTocart", auth_middleware_1.verifyToken, CartController.addProductToCart);
 router.get("/getMycart", auth_middleware_1.verifyToken, CartController.getMyCart);
 router.delete("/removeProduct/:productId", auth_middleware_1.verifyToken, CartController.removeProductFromCart);
+router.put("/updateCartQty", auth_middleware_1.verifyToken, CartController.updateCartItemQuantity);
 exports.default = router;

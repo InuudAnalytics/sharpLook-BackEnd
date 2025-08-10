@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeProductFromCart = exports.getMyCart = exports.addProductToCart = void 0;
+exports.updateCartItemQuantity = exports.removeProductFromCart = exports.getMyCart = exports.addProductToCart = void 0;
 const CartService = __importStar(require("../services/cart.service"));
 const addProductToCart = async (req, res) => {
     const userId = req.user.id;
@@ -96,3 +96,30 @@ const removeProductFromCart = async (req, res) => {
     }
 };
 exports.removeProductFromCart = removeProductFromCart;
+const updateCartItemQuantity = async (req, res) => {
+    const userId = req.user.id;
+    const { quantity, productId } = req.body;
+    if (typeof quantity !== 'number' || quantity < 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Quantity must be a non-negative number"
+        });
+    }
+    try {
+        const updatedItem = await CartService.updateCartQuantity(userId, productId, quantity);
+        return res.status(200).json({
+            success: true,
+            message: quantity === 0
+                ? "Product removed from cart"
+                : "Cart quantity updated successfully",
+            data: updatedItem || null,
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
+exports.updateCartItemQuantity = updateCartItemQuantity;

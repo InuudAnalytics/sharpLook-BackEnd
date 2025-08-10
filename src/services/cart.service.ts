@@ -66,3 +66,46 @@ export const removeFromCart = async (userId: string, productId: string) => {
     where: { userId, productId },
   })
 }
+
+
+export const updateCartQuantity = async (
+  userId: string,
+  productId: string,
+  quantity: number
+) => {
+  if (quantity <= 0) {
+    await prisma.cartItem.deleteMany({
+      where: { userId, productId },
+    });
+    return null;
+  }
+
+  // 1. Get product and cart item
+  const [product, existingItem] = await Promise.all([
+    prisma.product.findUnique({ where: { id: productId } }),
+    prisma.cartItem.findFirst({ where: { userId, productId } }),
+  ]);
+
+  if (!product) {
+    throw new NotFoundError("Product not found");
+  }
+
+  if (!existingItem) {
+    throw new NotFoundError("Item not found in cart");
+  }
+
+  if (product.approvalStatus !== ApprovalStatus.APPROVED) {
+    throw new ForbiddenError("Product is not approved for sale");
+  }
+
+  if (quantity > product.qtyAvailable) {
+    throw new BadRequestError(`Only ${product.qtyAvailable} in stock`);
+  }
+
+  // 2. Update quantity
+  return await prisma.cartItem.update({
+    where: { id: existingItem.id },
+    data: { quantity },
+    include: { product: true },
+  });
+};
