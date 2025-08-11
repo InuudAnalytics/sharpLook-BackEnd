@@ -14,7 +14,7 @@ router.post("/raiseDispute", auth_middleware_1.verifyToken, upload_middleware_1.
 router.get("/getAllDisputes", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["ADMIN", "SUPERADMIN"]), dispute_controller_1.getDisputes);
 router.patch("/resolveDispute", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["ADMIN", "SUPERADMIN"]), dispute_controller_1.resolveDispute);
 // 📌 POST: Create a new vendor order dispute (with image upload)
-router.post("/createOrderdispute", auth_middleware_1.verifyToken, upload_middleware_1.uploadDisputeImage, dispute_controller_1.createVendorOrderDisputeHandler);
+router.post("/createOrderdispute22", auth_middleware_1.verifyToken, upload_middleware_1.uploadDisputeImage, dispute_controller_1.createVendorOrderDisputeHandler);
 // 📌 GET: Fetch all vendor order disputes
 router.get("/getOrderDisputes", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["ADMIN", "SUPERADMIN"]), dispute_controller_1.getAllVendorOrderDisputesHandler);
 // 📌 PATCH: Update dispute status (RESOLVED or REJECTED)

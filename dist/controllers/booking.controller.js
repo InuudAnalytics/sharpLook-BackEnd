@@ -46,6 +46,7 @@ const pushNotifications_service_1 = require("../services/pushNotifications.servi
 const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const bookVendor = async (req, res) => {
     const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod } = req.body;
+    console.log("This the vendoir id in booking :", vendorId);
     // Corrected to match your service
     // Payment status will be set inside the service based on wallet logic, so no need to send here.
     if (!vendorId || !date || !time || !price || !serviceName || !serviceId || !totalAmount) {
@@ -104,6 +105,7 @@ exports.bookVendor = bookVendor;
 const getMyBookings = async (req, res) => {
     try {
         const role = req.user.role;
+        console.log("This is my id in bgetting booings", req.user.id);
         const bookings = await BookingService.getUserBookings(req.user.id, role);
         return res.status(200).json({
             success: true,
