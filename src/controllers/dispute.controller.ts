@@ -68,13 +68,15 @@ export const resolveDispute = async (req: Request, res: Response) => {
 
 export const createVendorOrderDisputeHandler = async (req: Request, res: Response) => {
   try {
+    console.log("🔥 createVendorOrderDisputeHandler triggered");
+
     const userId = req.user!.id;
 
     const { reason, vendorOrderIds } = req.body;
 
-    console.log("Received reason:", reason);
-    console.log("Received vendorOrderIds:", vendorOrderIds);
-    console.log("Type of vendorOrderIds:", typeof vendorOrderIds);
+    console.log("📦 req.body:", JSON.stringify(req.body, null, 2));
+    console.log("📨 vendorOrderIds (raw):", vendorOrderIds);
+    console.log("📨 Type of vendorOrderIds:", typeof vendorOrderIds);
 
     if (!reason || !vendorOrderIds) {
       return res.status(400).json({ error: "Missing reason or vendorOrderIds" });
@@ -82,21 +84,20 @@ export const createVendorOrderDisputeHandler = async (req: Request, res: Respons
 
     let parsedVendorOrderIds: string[];
 
-    if (typeof vendorOrderIds === "string") {
-      try {
-        parsedVendorOrderIds = JSON.parse(vendorOrderIds);
-      } catch (e) {
-        console.error("Error parsing vendorOrderIds:", e);
-        return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
-      }
-    } else if (Array.isArray(vendorOrderIds)) {
-      parsedVendorOrderIds = vendorOrderIds;
-    } else {
-      return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
+    try {
+      // Handle form-data: vendorOrderIds is a string like '["id1","id2"]'
+      parsedVendorOrderIds =
+        typeof vendorOrderIds === "string"
+          ? JSON.parse(vendorOrderIds)
+          : vendorOrderIds;
+    } catch (err) {
+      console.error("❌ Failed to parse vendorOrderIds:", err);
+      return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
     }
 
     if (!Array.isArray(parsedVendorOrderIds) || parsedVendorOrderIds.length === 0) {
-      return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
+      console.error("❌ Invalid parsedVendorOrderIds:", parsedVendorOrderIds);
+      return res.status(400).json({ error: "vendorOrderIds must be a non-empty item Array" });
     }
 
     let disputeImage: string | undefined;
@@ -118,10 +119,11 @@ export const createVendorOrderDisputeHandler = async (req: Request, res: Respons
       data: disputes,
     });
   } catch (err: any) {
-    console.error("Dispute creation error:", err);
+    console.error("❌ Dispute creation error:", err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+;
 
 
 export const getAllVendorOrderDisputesHandler = async (req: Request, res: Response) => {

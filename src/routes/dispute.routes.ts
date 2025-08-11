@@ -14,7 +14,7 @@ router.patch("/resolveDispute", verifyToken, requireRole(["ADMIN", "SUPERADMIN"]
 
 
 // 📌 POST: Create a new vendor order dispute (with image upload)
-router.post("/createOrderdispute", verifyToken,
+router.post("/createOrderdispute22", verifyToken,
 uploadDisputeImage,
   createVendorOrderDisputeHandler
 );
