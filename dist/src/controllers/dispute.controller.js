@@ -90,15 +90,27 @@ const createVendorOrderDisputeHandler = async (req, res) => {
     try {
         const userId = req.user.id;
         const { reason, vendorOrderIds } = req.body;
+        console.log("Received reason:", reason);
+        console.log("Received vendorOrderIds:", vendorOrderIds);
+        console.log("Type of vendorOrderIds:", typeof vendorOrderIds);
         if (!reason || !vendorOrderIds) {
             return res.status(400).json({ error: "Missing reason or vendorOrderIds" });
         }
         let parsedVendorOrderIds;
-        try {
-            parsedVendorOrderIds = JSON.parse(vendorOrderIds);
+        if (typeof vendorOrderIds === "string") {
+            try {
+                parsedVendorOrderIds = JSON.parse(vendorOrderIds);
+            }
+            catch (e) {
+                console.error("Error parsing vendorOrderIds:", e);
+                return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
+            }
         }
-        catch (e) {
-            return res.status(400).json({ error: "vendorOrderIds must be a valid JSON array" });
+        else if (Array.isArray(vendorOrderIds)) {
+            parsedVendorOrderIds = vendorOrderIds;
+        }
+        else {
+            return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
         }
         if (!Array.isArray(parsedVendorOrderIds) || parsedVendorOrderIds.length === 0) {
             return res.status(400).json({ error: "vendorOrderIds must be a non-empty array" });
