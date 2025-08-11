@@ -61,35 +61,40 @@ const updateServiceRadiusAndLocation = async (userId, radiusKm, latitude, longit
 };
 exports.updateServiceRadiusAndLocation = updateServiceRadiusAndLocation;
 const findNearbyVendors = async (clientLat, clientLon) => {
-    const allVendors = await prisma_1.default.vendorOnboarding.findMany({
-        where: {
-            latitude: { not: null },
-            longitude: { not: null },
-            serviceRadiusKm: { not: null },
-        },
+    const allVendors = await prisma_1.default.user.findMany({
+        where: { role: "VENDOR" },
         include: {
-            user: {
-                include: {
-                    vendorServices: true,
-                    products: true, // fetch all products, filter next
-                },
-            },
+            vendorOnboarding: true,
+            vendorReviews: true,
+            vendorServices: true,
+            vendorAvailability: true,
+            promotions: true,
+            wallet: true,
+            products: true,
         },
     });
-    // Filter vendors by distance and only include approved products
-    return allVendors
+    const filteredAndMapped = allVendors
         .filter((vendor) => {
-        const { latitude, longitude, serviceRadiusKm } = vendor;
-        const distance = (0, distance_1.haversineDistanceKm)(clientLat, clientLon, latitude, longitude);
-        return distance <= serviceRadiusKm;
+        const onboarding = vendor.vendorOnboarding;
+        if (!onboarding || onboarding.latitude == null || onboarding.longitude == null || onboarding.serviceRadiusKm == null) {
+            return false;
+        }
+        const distance = (0, distance_1.haversineDistanceKm)(clientLat, clientLon, onboarding.latitude, onboarding.longitude);
+        return distance <= onboarding.serviceRadiusKm;
     })
-        .map((vendor) => ({
-        ...vendor,
-        user: {
-            ...vendor.user,
-            products: (vendor.user.products || []).filter((product) => product.approvalStatus === client_1.ApprovalStatus.APPROVED),
-        },
-    }));
+        .map((vendor) => {
+        const reviews = vendor.vendorReviews || [];
+        const total = reviews.length;
+        const avgRating = total > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / total : 0;
+        const approvedProducts = (vendor.products || []).filter((product) => product.approvalStatus === client_1.ApprovalStatus.APPROVED);
+        return {
+            ...vendor,
+            rating: avgRating,
+            totalReviews: total,
+            products: approvedProducts,
+        };
+    });
+    return filteredAndMapped;
 };
 exports.findNearbyVendors = findNearbyVendors;
 const getAllVendorServices = async () => {

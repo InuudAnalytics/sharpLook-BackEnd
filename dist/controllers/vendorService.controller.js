@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteAVendorService = exports.updateVendorService = exports.fetchAllVendorServices = exports.fetchVendorServices = exports.createVendorService = void 0;
 const vendorService_service_1 = require("../services/vendorService.service");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
+const client_1 = require("@prisma/client");
 const createVendorService = async (req, res) => {
     console.log("➡️ [VendorService] Incoming request to create vendor service");
     // 1. Extract data
@@ -123,7 +124,6 @@ const updateVendorService = async (req, res) => {
     }
 };
 exports.updateVendorService = updateVendorService;
-const client_1 = require("@prisma/client");
 // ✅ Delete vendor service
 const deleteAVendorService = async (req, res) => {
     const { serviceId } = req.params;

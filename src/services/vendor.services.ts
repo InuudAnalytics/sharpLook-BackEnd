@@ -76,43 +76,51 @@ export const findNearbyVendors = async (
   clientLat: number,
   clientLon: number
 ) => {
-  const allVendors = await prisma.vendorOnboarding.findMany({
-    where: {
-      latitude: { not: null },
-      longitude: { not: null },
-      serviceRadiusKm: { not: null },
-    },
+  const allVendors = await prisma.user.findMany({
+    where: { role: "VENDOR" },
     include: {
-      user: {
-        include: {
-          vendorServices: true,
-          products: true,  // fetch all products, filter next
-        },
-      },
+      vendorOnboarding: true,
+      vendorReviews: true,
+      vendorServices: true,
+      vendorAvailability: true,
+      promotions: true,
+      wallet: true,
+      products: true,
     },
   });
 
-  // Filter vendors by distance and only include approved products
-  return allVendors
+  const filteredAndMapped = allVendors
     .filter((vendor: any) => {
-      const { latitude, longitude, serviceRadiusKm } = vendor;
+      const onboarding = vendor.vendorOnboarding;
+      if (!onboarding || onboarding.latitude == null || onboarding.longitude == null || onboarding.serviceRadiusKm == null) {
+        return false;
+      }
       const distance = haversineDistanceKm(
         clientLat,
         clientLon,
-        latitude!,
-        longitude!
+        onboarding.latitude,
+        onboarding.longitude
       );
-      return distance <= serviceRadiusKm!;
+      return distance <= onboarding.serviceRadiusKm;
     })
-    .map((vendor: any) => ({
-      ...vendor,
-      user: {
-        ...vendor.user,
-        products: (vendor.user.products || []).filter(
-          (product: any) => product.approvalStatus === ApprovalStatus.APPROVED
-        ),
-      },
-    }));
+    .map((vendor: any) => {
+      const reviews = vendor.vendorReviews || [];
+      const total = reviews.length;
+      const avgRating = total > 0 ? reviews.reduce((acc: any, r: any) => acc + r.rating, 0) / total : 0;
+
+      const approvedProducts = (vendor.products || []).filter(
+        (product: any) => product.approvalStatus === ApprovalStatus.APPROVED
+      );
+
+      return {
+        ...vendor,
+        rating: avgRating,
+        totalReviews: total,
+        products: approvedProducts,
+      };
+    });
+
+  return filteredAndMapped;
 };
 
 

@@ -6,6 +6,7 @@ import {
   editVendorService,
 deleteVendorService} from "../services/vendorService.service";
 import uploadToCloudinary from "../utils/cloudinary";
+import { Prisma } from "@prisma/client";
 
 export const createVendorService = async (req: Request, res: Response) => {
   console.log("➡️ [VendorService] Incoming request to create vendor service");
@@ -147,7 +148,6 @@ export const updateVendorService = async (req: Request, res: Response) => {
   }
 };
 
-import { Prisma } from "@prisma/client";
 
 
 
