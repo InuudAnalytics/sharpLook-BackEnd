@@ -26,6 +26,8 @@ export const bookVendor = async (req: Request, res: Response) => {
     paymentMethod
   } = req.body;
 
+    console.log("This the vendoir id in booking :", vendorId);
+    
     // Corrected to match your service
   // Payment status will be set inside the service based on wallet logic, so no need to send here.
 
@@ -124,6 +126,9 @@ export const bookVendor = async (req: Request, res: Response) => {
 export const getMyBookings = async (req: Request, res: Response) => {
   try {
     const role = req.user!.role as "CLIENT" | "VENDOR";
+
+    console.log("This is my id in bgetting booings",req.user!.id);
+    
     const bookings = await BookingService.getUserBookings(req.user!.id, role);
 
     return res.status(200).json({
