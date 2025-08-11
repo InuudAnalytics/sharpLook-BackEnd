@@ -4,9 +4,6 @@ exports.connectDB = connectDB;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 async function connectDB() {
-    if (process.env.NODE_ENV === "test") {
-        return; // ✅ Skip DB connection in tests
-    }
     try {
         await prisma.$connect();
         console.log("✅ Database is connected");

@@ -139,8 +139,8 @@ export const getAllVendorOrderDisputesHandler = async (req: Request, res: Respon
 
 export const updateVendorOrderDisputeStatusHandler = async (req: Request, res: Response) => {
   try {
-    const { status, resolution, disputeId } = req.body;
-
+    const { status, disputeId } = req.body;
+    const resolution = "REFUND_TO_CLIENT"
     // ✅ Validate input
     if (!disputeId || !status) {
       return res.status(400).json({ error: "disputeId and status are required" });
