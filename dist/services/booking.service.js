@@ -345,7 +345,7 @@ const getUserBookings = async (userId, role) => {
         dispute: null, // if you want to support disputes on serviceOfferBooking later
     }));
     // Combine both and sort by date
-    const allBookings = [...normalizedStandardBookings, ...normalizedServiceOfferBookings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const allBookings = [...normalizedStandardBookings, ...normalizedServiceOfferBookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return allBookings;
 };
 exports.getUserBookings = getUserBookings;

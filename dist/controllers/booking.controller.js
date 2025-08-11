@@ -222,8 +222,9 @@ exports.markBookingCompletedByVendor = markBookingCompletedByVendor;
 // hpome servcie 
 const createHomeServiceBooking = async (req, res) => {
     try {
-        const { clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, homeDetails, } = req.body;
-        const booking = await (0, booking_service_1.homeServiceCreateBooking)(req.user.id, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, homeDetails);
+        const clientId = req.user.id;
+        const { vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, serviceType, homeDetails, } = req.body;
+        const booking = await (0, booking_service_1.homeServiceCreateBooking)(clientId, vendorId, serviceId, paymentMethod, serviceName, parseFloat(price), parseFloat(totalAmount), time, date, reference, serviceType, homeDetails);
         res.status(201).json({ success: true, message: "Booking created", data: booking });
     }
     catch (err) {

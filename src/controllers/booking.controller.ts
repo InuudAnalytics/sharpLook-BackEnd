@@ -294,8 +294,10 @@ export const markBookingCompletedByVendor = async (req: Request, res: Response) 
 
 export const createHomeServiceBooking = async (req: Request, res: Response) => {
   try {
+
+  const  clientId =  req.user!.id
     const {
-      clientId,
+      
       vendorId,
       serviceId,
       paymentMethod,
@@ -308,21 +310,20 @@ export const createHomeServiceBooking = async (req: Request, res: Response) => {
       serviceType,
       homeDetails,
     } = req.body
-
-    const booking = await homeServiceCreateBooking(
-  req.user!.id,
+const booking = await homeServiceCreateBooking(
+  clientId,
+  vendorId,
   serviceId,
-  paymentMethod,
-  serviceName,
-  price,
-  totalAmount,
-  time,
-  date,
-  reference,
-  serviceType,
-  homeDetails
-)
-
+  paymentMethod,    
+  serviceName,      
+  parseFloat(price),        
+  parseFloat(totalAmount),  
+  time,            
+  date,            
+  reference,         
+  serviceType,      
+  homeDetails       
+);
     res.status(201).json({ success: true, message: "Booking created", data: booking })
   } catch (err: any) {
     console.error("Create booking error:", err);

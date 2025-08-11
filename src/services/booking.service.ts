@@ -422,9 +422,9 @@ export const getUserBookings = async (userId: string, role: "CLIENT" | "VENDOR")
   }));
 
   // Combine both and sort by date
-  const allBookings = [...normalizedStandardBookings, ...normalizedServiceOfferBookings].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+const allBookings = [...normalizedStandardBookings, ...normalizedServiceOfferBookings].sort(
+  (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+);
 
   return allBookings;
 };
