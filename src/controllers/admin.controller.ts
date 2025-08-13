@@ -5,7 +5,9 @@ import { sendMail } from "../helpers/email.helper";
 import { logAdminAction } from '../utils/adminLogger';
 import uploadToCloudinary from "../utils/cloudinary";
 
-// Utility to extract error message safely
+// Utility to 
+// 
+extract error message safely
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Internal server error";
 
