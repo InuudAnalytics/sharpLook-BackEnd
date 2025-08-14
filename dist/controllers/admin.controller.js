@@ -41,7 +41,8 @@ const AdminService = __importStar(require("../services/admin.service"));
 const email_helper_1 = require("../helpers/email.helper");
 const adminLogger_1 = require("../utils/adminLogger");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
-// Utility to extract error message safely
+// Utility to 
+// extract error message safely
 const getErrorMessage = (error) => error instanceof Error ? error.message : "Internal server error";
 // ====================== USERS ======================
 const client_1 = require("@prisma/client");

@@ -5,8 +5,10 @@ import {
   markMessagesAsRead,
   toggleMessageLike,
   countUnreadMessages,
-  getChatListForUser,
-  getChatPreviews,
+  // getChatListForUser,
+  // getChatPreviews,
+  getClientChatList,
+  getVendorChatList,
   deleteMessage,
   editMessage,
 } from "../services/message.service"
@@ -86,26 +88,58 @@ export const getUnreadMessageCount = async (req: Request, res: Response) => {
 };
 
 
-export const getChatList = async (req: Request, res: Response) => {
+export const getClientChatListController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const chats = await getChatListForUser(userId);
+
+    const chats = await getClientChatList(userId);
     return res.status(200).json({ success: true, data: chats });
   } catch (error) {
-    return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
+    console.error('Error fetching client chat list:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch client chat list' });
   }
 };
 
-// 7. Get last message preview per room
-export const getChatPreviewsController = async (req: Request, res: Response) => {
+
+
+export const getVendorChatListController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const previews = await getChatPreviews(userId);
-    return res.status(200).json({ success: true, data: previews });
+
+    const chats = await getVendorChatList(userId);
+    return res.status(200).json({ success: true, data: chats });
   } catch (error) {
-    return res.status(500).json({ success: false, error: "Failed to fetch previews" });
+    console.error('Error fetching vendor chat list:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch vendor chat list' });
   }
 };
+
+
+
+
+
+// export const getChatList = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+//     const chats = await getChatListForUser(userId);
+//     return res.status(200).json({ success: true, data: chats });
+//   } catch (error) {
+//     return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
+//   }
+// };
+
+// 7. Get last message preview per room
+
+
+// export const getChatPreviewsController = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+//     const previews = await getChatPreviews(userId);
+//     return res.status(200).json({ success: true, data: previews });
+//   } catch (error) {
+//     return res.status(500).json({ success: false, error: "Failed to fetch previews" });
+//   }
+// };
 
 // 8. Delete a message
 export const deleteMessageController = async (req: Request, res: Response) => {

@@ -6,8 +6,10 @@ import {
   markAsRead,
   likeMessage,
   getUnreadMessageCount,
-    getChatList,
-  getChatPreviewsController,
+  //   getChatList,
+  // getChatPreviewsController,
+  getClientChatListController,
+  getVendorChatListController,
   deleteMessageController,
   editMessageController,
   
@@ -20,8 +22,11 @@ router.get("/:roomId", verifyToken, fetchMessages)
 router.patch("/:roomId/read", verifyToken, markAsRead)
 router.patch("/:messageId/like", verifyToken, likeMessage)
 router.get("/unread/count", verifyToken, getUnreadMessageCount)
-router.get("/chats/:userId", getChatList); // list of rooms/chats
-router.get("/previews/:userId", getChatPreviewsController); // last messages in rooms
+// router.get("/chats/:userId", getChatList); // list of rooms/chats
+// router.get("/previews/:userId", getChatPreviewsController); // last messages in rooms
+
+router.get("/getClientChats", verifyToken, getClientChatListController)
+router.get("/getVendorChats", verifyToken, getVendorChatListController)
 router.delete("/:messageId", deleteMessageController); // delete a message
 router.patch("/edit/:messageId", editMessageController); // edit a message
 

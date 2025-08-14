@@ -120,10 +120,34 @@ export const getTopSellingProducts = async (limit = 10) => {
     },
     include: {
       vendor: {
-        select: {
-          id: true,
-          name: true,
-          avatar: true,
+        include: {
+          vendorOnboarding: true,
+          vendorAvailability: true,
+          vendorServices: true,
+          vendorReviews: {
+            include: {
+              client: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          wallet: true,
+          products: true,
+          cartItems: true,
+          wishlistItems: true,
+          orders: true,
+          referralsMade: true,
+          referralsGotten: true,
+          notifications: true,
+          sentMessages: true,
+          receivedMessages: true,
         },
       },
     },

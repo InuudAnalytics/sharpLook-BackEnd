@@ -6,8 +6,7 @@ import { logAdminAction } from '../utils/adminLogger';
 import uploadToCloudinary from "../utils/cloudinary";
 
 // Utility to 
-// 
-extract error message safely
+// extract error message safely
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Internal server error";
 
