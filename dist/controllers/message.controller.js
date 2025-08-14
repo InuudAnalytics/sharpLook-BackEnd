@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editMessageController = exports.deleteMessageController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = void 0;
+exports.editMessageController = exports.deleteMessageController = exports.getVendorChatPreviewsController = exports.getClientChatPreviewsController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = void 0;
 const message_service_1 = require("../services/message.service");
 const fetchMessages = async (req, res) => {
     const { roomId } = req.params;
@@ -98,6 +98,30 @@ const getVendorChatListController = async (req, res) => {
     }
 };
 exports.getVendorChatListController = getVendorChatListController;
+const getClientChatPreviewsController = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const previews = await (0, message_service_1.getClientChatPreviews)(userId);
+        return res.status(200).json({ success: true, data: previews });
+    }
+    catch (error) {
+        console.error('Error fetching client chat previews:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch client chat previews' });
+    }
+};
+exports.getClientChatPreviewsController = getClientChatPreviewsController;
+const getVendorChatPreviewsController = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const previews = await (0, message_service_1.getVendorChatPreviews)(userId);
+        return res.status(200).json({ success: true, data: previews });
+    }
+    catch (error) {
+        console.error('Error fetching vendor chat previews:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch vendor chat previews' });
+    }
+};
+exports.getVendorChatPreviewsController = getVendorChatPreviewsController;
 // export const getChatList = async (req: Request, res: Response) => {
 //   try {
 //     const { userId } = req.params;

@@ -9,6 +9,8 @@ import {
   // getChatPreviews,
   getClientChatList,
   getVendorChatList,
+  getClientChatPreviews,
+  getVendorChatPreviews,
   deleteMessage,
   editMessage,
 } from "../services/message.service"
@@ -115,7 +117,29 @@ export const getVendorChatListController = async (req: Request, res: Response) =
 };
 
 
+export const getClientChatPreviewsController = async (req: Request, res: Response) => {
+  try {
+    const  userId  = req.user!.id;
+    const previews = await getClientChatPreviews(userId);
+    return res.status(200).json({ success: true, data: previews });
+  } catch (error) {
+    console.error('Error fetching client chat previews:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch client chat previews' });
+  }
+};
 
+
+
+export const getVendorChatPreviewsController = async (req: Request, res: Response) => {
+  try {
+    const  userId  = req.user!.id;
+    const previews = await getVendorChatPreviews(userId);
+    return res.status(200).json({ success: true, data: previews });
+  } catch (error) {
+    console.error('Error fetching vendor chat previews:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch vendor chat previews' });
+  }
+};
 
 
 // export const getChatList = async (req: Request, res: Response) => {

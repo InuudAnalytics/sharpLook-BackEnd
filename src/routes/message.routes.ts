@@ -8,8 +8,11 @@ import {
   getUnreadMessageCount,
   //   getChatList,
   // getChatPreviewsController,
+
   getClientChatListController,
   getVendorChatListController,
+  getClientChatPreviewsController,
+  getVendorChatPreviewsController,
   deleteMessageController,
   editMessageController,
   
@@ -27,6 +30,9 @@ router.get("/unread/count", verifyToken, getUnreadMessageCount)
 
 router.get("/getClientChats", verifyToken, getClientChatListController)
 router.get("/getVendorChats", verifyToken, getVendorChatListController)
+router.get('/client/previews', verifyToken, getClientChatPreviewsController);
+router.get('/vendor/previews', verifyToken, getVendorChatPreviewsController);
+
 router.delete("/:messageId", deleteMessageController); // delete a message
 router.patch("/edit/:messageId", editMessageController); // edit a message
 

@@ -327,6 +327,56 @@ export const getVendorChatList = async (userId: string) => {
 // };
 
 
+
+
+export const getClientChatPreviews = async (userId: string) => {
+  const clientChats = await getClientChatList(userId);
+
+  const previews = await Promise.all(
+    clientChats.map(async (chat) => {
+      const lastMessage = await prisma.message.findFirst({
+        where: { roomId: chat?.roomId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return {
+        roomId: chat?.roomId,
+        lastMessage,
+        vendor: chat?.vendor,
+      };
+    })
+  );
+
+  return previews;
+};
+
+
+
+
+export const getVendorChatPreviews = async (userId: string) => {
+  const vendorChats = await getVendorChatList(userId);
+
+  const previews = await Promise.all(
+    vendorChats.map(async (chat) => {
+      const lastMessage = await prisma.message.findFirst({
+        where: { roomId: chat?.roomId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return {
+        roomId: chat?.roomId,
+        lastMessage,
+        client: chat?.client,
+      };
+    })
+  );
+
+  return previews;
+};
+
+
+
+
 export const deleteMessage = async (messageId: string) => {
   return await prisma.message.delete({
     where: { id: messageId },

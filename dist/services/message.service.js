@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editMessage = exports.deleteMessage = exports.getVendorChatList = exports.getClientChatList = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
+exports.editMessage = exports.deleteMessage = exports.getVendorChatPreviews = exports.getClientChatPreviews = exports.getVendorChatList = exports.getClientChatList = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const saveMessage = async (senderId, receiverId, roomId, message) => {
     return await prisma_1.default.message.create({
@@ -295,6 +295,38 @@ exports.getVendorChatList = getVendorChatList;
 //   );
 //   return previews;
 // };
+const getClientChatPreviews = async (userId) => {
+    const clientChats = await (0, exports.getClientChatList)(userId);
+    const previews = await Promise.all(clientChats.map(async (chat) => {
+        const lastMessage = await prisma_1.default.message.findFirst({
+            where: { roomId: chat?.roomId },
+            orderBy: { createdAt: 'desc' },
+        });
+        return {
+            roomId: chat?.roomId,
+            lastMessage,
+            vendor: chat?.vendor,
+        };
+    }));
+    return previews;
+};
+exports.getClientChatPreviews = getClientChatPreviews;
+const getVendorChatPreviews = async (userId) => {
+    const vendorChats = await (0, exports.getVendorChatList)(userId);
+    const previews = await Promise.all(vendorChats.map(async (chat) => {
+        const lastMessage = await prisma_1.default.message.findFirst({
+            where: { roomId: chat?.roomId },
+            orderBy: { createdAt: 'desc' },
+        });
+        return {
+            roomId: chat?.roomId,
+            lastMessage,
+            client: chat?.client,
+        };
+    }));
+    return previews;
+};
+exports.getVendorChatPreviews = getVendorChatPreviews;
 const deleteMessage = async (messageId) => {
     return await prisma_1.default.message.delete({
         where: { id: messageId },
