@@ -90,7 +90,7 @@ export const getUnreadMessageCount = async (req: Request, res: Response) => {
 
 export const getClientChatListController = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId  = req.user!.id;
 
     const chats = await getClientChatList(userId);
     return res.status(200).json({ success: true, data: chats });
@@ -104,7 +104,7 @@ export const getClientChatListController = async (req: Request, res: Response) =
 
 export const getVendorChatListController = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId  = req.user!.id;
 
     const chats = await getVendorChatList(userId);
     return res.status(200).json({ success: true, data: chats });
