@@ -193,6 +193,7 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
     where: { userId: clientId },
     orderBy: { createdAt: "desc" },
     include: {
+      
       items: {
         include: {
           product: {
@@ -215,8 +216,10 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
               },
             },
           },
+          
         },
       },
+  
       vendorOrders: {
         select: {
           id: true,          // ✅ Needed for completion
@@ -232,6 +235,7 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
     id: order.id,
     total: order.total,
     createdAt: order.createdAt,
+    deliveryType: order.deliveryType,
     items: order.items.map(item => {
       const vendorOrder = order.vendorOrders.find(
         vo => vo.vendorId === item.product.vendor.id
@@ -265,21 +269,21 @@ export const getClientOrdersWithVendors = async (clientId: string) => {
 
 
 
-
 export const getVendorOrders = async (vendorId: string) => {
-
   return await prisma.vendorOrder.findMany({
     where: { vendorId },
     include: {
       order: {
-        include: {
-          user: { select: { id: true, firstName: true, lastName: true, phone: true , location: true } },
+        select: {
+          id: true,
+          deliveryType: true,   
+          createdAt: true,
+          user: { select: { id: true, firstName: true, lastName: true, phone: true, location: true } },
           items: {
             include: {
-              product: true, // include vendor? not necessary here but possible
+              product: true,
             },
           },
-        
         },
       },
     },

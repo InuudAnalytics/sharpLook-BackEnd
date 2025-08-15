@@ -200,6 +200,7 @@ const getClientOrdersWithVendors = async (clientId) => {
         id: order.id,
         total: order.total,
         createdAt: order.createdAt,
+        deliveryType: order.deliveryType,
         items: order.items.map(item => {
             const vendorOrder = order.vendorOrders.find(vo => vo.vendorId === item.product.vendor.id);
             return {
@@ -231,11 +232,14 @@ const getVendorOrders = async (vendorId) => {
         where: { vendorId },
         include: {
             order: {
-                include: {
+                select: {
+                    id: true,
+                    deliveryType: true,
+                    createdAt: true,
                     user: { select: { id: true, firstName: true, lastName: true, phone: true, location: true } },
                     items: {
                         include: {
-                            product: true, // include vendor? not necessary here but possible
+                            product: true,
                         },
                     },
                 },
