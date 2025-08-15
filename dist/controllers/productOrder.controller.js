@@ -38,9 +38,9 @@ const ProductOrderService = __importStar(require("../services/productOrder.servi
 const notification_service_1 = require("../services/notification.service");
 const checkoutCart = async (req, res) => {
     const userId = req.user?.id;
-    const { reference } = req.body || {};
+    const { reference, deliveryType } = req.body || {};
     try {
-        const order = await ProductOrderService.checkoutCart(userId, reference);
+        const order = await ProductOrderService.checkoutCart(userId, reference, deliveryType);
         await (0, notification_service_1.createNotification)(userId, `Your order of ₦${order.total} was placed successfully.`);
         return res.status(201).json({
             success: true,

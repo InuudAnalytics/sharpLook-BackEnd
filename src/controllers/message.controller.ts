@@ -94,6 +94,9 @@ export const getClientChatListController = async (req: Request, res: Response) =
   try {
     const userId  = req.user!.id;
 
+    console.log('tHIS IS USER ID OOO:::',   userId);
+    
+
     const chats = await getClientChatList(userId);
     return res.status(200).json({ success: true, data: chats });
   } catch (error) {

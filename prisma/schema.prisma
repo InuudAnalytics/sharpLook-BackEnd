@@ -216,12 +216,20 @@
       user      User     @relation(fields: [userId], references: [id])
       reference String?
       total     Float
-        items   OrderItem[]
+      items   OrderItem[]
+      deliveryType DeliveryType  @default(SHIPPING)
 
-        vendorIds    String[]  
+
+      vendorIds    String[]  
       vendorOrders VendorOrder[]
       createdAt DateTime @default(now())
     }
+
+
+    enum DeliveryType {
+  PICKUP
+  SHIPPING
+}
 
     model OrderItem {
     id String @id @default(auto()) @map("_id") @db.ObjectId

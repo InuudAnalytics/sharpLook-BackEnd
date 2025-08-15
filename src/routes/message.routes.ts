@@ -25,11 +25,14 @@ router.get("/:roomId", verifyToken, fetchMessages)
 router.patch("/:roomId/read", verifyToken, markAsRead)
 router.patch("/:messageId/like", verifyToken, likeMessage)
 router.get("/unread/count", verifyToken, getUnreadMessageCount)
+
+
 // router.get("/chats/:userId", getChatList); // list of rooms/chats
 // router.get("/previews/:userId", getChatPreviewsController); // last messages in rooms
 
-router.get("/getClientChats", verifyToken, getClientChatListController)
-router.get("/getVendorChats", verifyToken, getVendorChatListController)
+
+router.get("/user/getClientChatsList", verifyToken, getClientChatListController)
+router.get("/user/getVendorChats", verifyToken, getVendorChatListController)
 router.get('/client/previews', verifyToken, getClientChatPreviewsController);
 router.get('/vendor/previews', verifyToken, getVendorChatPreviewsController);
 

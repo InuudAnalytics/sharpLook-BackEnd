@@ -77,6 +77,7 @@ exports.getUnreadMessageCount = getUnreadMessageCount;
 const getClientChatListController = async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log('tHIS IS USER ID OOO:::', userId);
         const chats = await (0, message_service_1.getClientChatList)(userId);
         return res.status(200).json({ success: true, data: chats });
     }

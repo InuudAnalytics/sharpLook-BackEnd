@@ -11,8 +11,8 @@ router.patch("/:messageId/like", auth_middleware_1.verifyToken, message_controll
 router.get("/unread/count", auth_middleware_1.verifyToken, message_controller_1.getUnreadMessageCount);
 // router.get("/chats/:userId", getChatList); // list of rooms/chats
 // router.get("/previews/:userId", getChatPreviewsController); // last messages in rooms
-router.get("/getClientChats", auth_middleware_1.verifyToken, message_controller_1.getClientChatListController);
-router.get("/getVendorChats", auth_middleware_1.verifyToken, message_controller_1.getVendorChatListController);
+router.get("/user/getClientChatsList", auth_middleware_1.verifyToken, message_controller_1.getClientChatListController);
+router.get("/user/getVendorChats", auth_middleware_1.verifyToken, message_controller_1.getVendorChatListController);
 router.get('/client/previews', auth_middleware_1.verifyToken, message_controller_1.getClientChatPreviewsController);
 router.get('/vendor/previews', auth_middleware_1.verifyToken, message_controller_1.getVendorChatPreviewsController);
 router.delete("/:messageId", message_controller_1.deleteMessageController); // delete a message

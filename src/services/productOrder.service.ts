@@ -3,10 +3,10 @@ import prisma from "../config/prisma";
 import { createNotification } from "./notification.service";
 import { sendVendorOrderEmail } from "../helpers/email.helper";
 import { debitWallet, getUserWallet } from "./wallet.service";
-import { VendorOrderStatus } from "@prisma/client"; 
+import { VendorOrderStatus, DeliveryType } from "@prisma/client"; 
 
 
-export const checkoutCart = async (userId: string, reference?: string) => {
+export const checkoutCart = async (userId: string, reference?: string,   deliveryType: DeliveryType = "SHIPPING") => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -113,6 +113,8 @@ export const checkoutCart = async (userId: string, reference?: string) => {
         vendorIds,
         total: totalAmount,
         reference: reference ?? "WALLET-CHECKOUT",
+        deliveryType
+
       },
     });
 
@@ -277,6 +279,7 @@ export const getVendorOrders = async (vendorId: string) => {
               product: true, // include vendor? not necessary here but possible
             },
           },
+        
         },
       },
     },

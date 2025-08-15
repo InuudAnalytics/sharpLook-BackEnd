@@ -9,7 +9,7 @@ const prisma_1 = __importDefault(require("../config/prisma"));
 const notification_service_1 = require("./notification.service");
 const email_helper_1 = require("../helpers/email.helper");
 const wallet_service_1 = require("./wallet.service");
-const checkoutCart = async (userId, reference) => {
+const checkoutCart = async (userId, reference, deliveryType = "SHIPPING") => {
     const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         include: {
@@ -93,6 +93,7 @@ const checkoutCart = async (userId, reference) => {
                 vendorIds,
                 total: totalAmount,
                 reference: reference ?? "WALLET-CHECKOUT",
+                deliveryType
             },
         });
         // Create OrderItem rows (one per cart item)
