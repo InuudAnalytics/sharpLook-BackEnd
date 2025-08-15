@@ -5,8 +5,8 @@ import {
   markMessagesAsRead,
   toggleMessageLike,
   countUnreadMessages,
-  // getChatListForUser,
-  // getChatPreviews,
+  getChatListForUser,
+  getChatPreviews,
   getClientChatList,
   getVendorChatList,
   getClientChatPreviews,
@@ -145,30 +145,34 @@ export const getVendorChatPreviewsController = async (req: Request, res: Respons
 };
 
 
-// export const getChatList = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-//     const chats = await getChatListForUser(userId);
-//     return res.status(200).json({ success: true, data: chats });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
-//   }
-// };
+export const getChatList = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const chats = await getChatListForUser(userId);
+    return res.status(200).json({ success: true, data: chats });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
+  }
+};
 
 // 7. Get last message preview per room
 
 
-// export const getChatPreviewsController = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-//     const previews = await getChatPreviews(userId);
-//     return res.status(200).json({ success: true, data: previews });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, error: "Failed to fetch previews" });
-//   }
-// };
+export const getChatPreviewsController = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const previews = await getChatPreviews(userId);
+    return res.status(200).json({ success: true, data: previews });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to fetch previews" });
+  }
+};
 
-// 8. Delete a message
+// 8. Delete a message/
+
+
+
+
 export const deleteMessageController = async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;

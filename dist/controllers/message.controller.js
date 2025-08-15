@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editMessageController = exports.deleteMessageController = exports.getVendorChatPreviewsController = exports.getClientChatPreviewsController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = void 0;
+exports.editMessageController = exports.deleteMessageController = exports.getChatPreviewsController = exports.getChatList = exports.getVendorChatPreviewsController = exports.getClientChatPreviewsController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = void 0;
 const message_service_1 = require("../services/message.service");
 const fetchMessages = async (req, res) => {
     const { roomId } = req.params;
@@ -123,26 +123,30 @@ const getVendorChatPreviewsController = async (req, res) => {
     }
 };
 exports.getVendorChatPreviewsController = getVendorChatPreviewsController;
-// export const getChatList = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-//     const chats = await getChatListForUser(userId);
-//     return res.status(200).json({ success: true, data: chats });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
-//   }
-// };
+const getChatList = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const chats = await (0, message_service_1.getChatListForUser)(userId);
+        return res.status(200).json({ success: true, data: chats });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch chat list" });
+    }
+};
+exports.getChatList = getChatList;
 // 7. Get last message preview per room
-// export const getChatPreviewsController = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-//     const previews = await getChatPreviews(userId);
-//     return res.status(200).json({ success: true, data: previews });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, error: "Failed to fetch previews" });
-//   }
-// };
-// 8. Delete a message
+const getChatPreviewsController = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const previews = await (0, message_service_1.getChatPreviews)(userId);
+        return res.status(200).json({ success: true, data: previews });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch previews" });
+    }
+};
+exports.getChatPreviewsController = getChatPreviewsController;
+// 8. Delete a message/
 const deleteMessageController = async (req, res) => {
     try {
         const { messageId } = req.params;

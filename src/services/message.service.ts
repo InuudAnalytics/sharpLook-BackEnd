@@ -71,102 +71,104 @@ export const countUnreadMessages = async (userId: string) => {
     },
   });
 };
-// export const getChatListForUser = async (userId: string) => {
-//   // Step 1: Get unique roomIds where the user is a participant
-//   const roomIds = await prisma.message.findMany({
-//     where: {
-//       OR: [{ senderId: userId }, { receiverId: userId }],
-//     },
-//     select: {
-//       roomId: true,
-//     },
-//     distinct: ['roomId'],
-//   });
 
-//   const roomIdList = roomIds.map((r) => r.roomId);
 
-//   // Step 2: For each roomId, get the latest message (ordered by createdAt DESC)
-//   const messages = await Promise.all(
-//     roomIdList.map(async (roomId) => {
-//       const latestMessage = await prisma.message.findFirst({
-//         where: {
-//           roomId,
-//         },
-//         orderBy: {
-//           createdAt: 'desc',
-//         },
-//         select: {
-//           roomId: true,
-//           createdAt: true,
-//           sender: {
-//             select: {
-//               id: true,
-//               firstName: true,
-//               lastName: true,
-//               email: true,
-//               phone: true,
-//               role: true,
-//               avatar: true,
-//               vendorOnboarding: {
-//                 select: {
-//                   businessName: true,
-//                 },
-//               },
-//             },
-//           },
-//           receiver: {
-//             select: {
-//               id: true,
-//               firstName: true,
-//               lastName: true,
-//               email: true,
-//               phone: true,
-//               role: true,
-//               avatar: true,
-//               vendorOnboarding: {
-//                 select: {
-//                   businessName: true,
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       });
+export const getChatListForUser = async (userId: string) => {
+  // Step 1: Get unique roomIds where the user is a participant
+  const roomIds = await prisma.message.findMany({
+    where: {
+      OR: [{ senderId: userId }, { receiverId: userId }],
+    },
+    select: {
+      roomId: true,
+    },
+    distinct: ['roomId'],
+  });
 
-//       return latestMessage;
-//     })
-//   );
+  const roomIdList = roomIds.map((r) => r.roomId);
 
-//   // Filter out any null messages (shouldn’t happen unless deleted)
-//   return messages
-//     .filter((msg): msg is NonNullable<typeof msg> => msg !== null)
-//     .map((room) => ({
-//       roomId: room.roomId,
-//       createdAt: room.createdAt,
-//       sender: {
-//         id: room.sender.id,
-//         name:
-//           room.sender.role === 'VENDOR' && room.sender.vendorOnboarding?.businessName
-//             ? room.sender.vendorOnboarding.businessName
-//             : `${room.sender.firstName} ${room.sender.lastName}`,
-//         email: room.sender.email,
-//         phone: room.sender.phone,
-//         avatar: room.sender.avatar,
-//         role: room.sender.role,
-//       },
-//       receiver: {
-//         id: room.receiver.id,
-//         name:
-//           room.receiver.role === 'VENDOR' && room.receiver.vendorOnboarding?.businessName
-//             ? room.receiver.vendorOnboarding.businessName
-//             : `${room.receiver.firstName} ${room.receiver.lastName}`,
-//         email: room.receiver.email,
-//         phone: room.receiver.phone,
-//         avatar: room.receiver.avatar,
-//         role: room.receiver.role,
-//       },
-//     }));
-// };
+  // Step 2: For each roomId, get the latest message (ordered by createdAt DESC)
+  const messages = await Promise.all(
+    roomIdList.map(async (roomId) => {
+      const latestMessage = await prisma.message.findFirst({
+        where: {
+          roomId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          roomId: true,
+          createdAt: true,
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              role: true,
+              avatar: true,
+              vendorOnboarding: {
+                select: {
+                  businessName: true,
+                },
+              },
+            },
+          },
+          receiver: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              role: true,
+              avatar: true,
+              vendorOnboarding: {
+                select: {
+                  businessName: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return latestMessage;
+    })
+  );
+
+  // Filter out any null messages (shouldn’t happen unless deleted)
+  return messages
+    .filter((msg): msg is NonNullable<typeof msg> => msg !== null)
+    .map((room) => ({
+      roomId: room.roomId,
+      createdAt: room.createdAt,
+      sender: {
+        id: room.sender.id,
+        name:
+          room.sender.role === 'VENDOR' && room.sender.vendorOnboarding?.businessName
+            ? room.sender.vendorOnboarding.businessName
+            : `${room.sender.firstName} ${room.sender.lastName}`,
+        email: room.sender.email,
+        phone: room.sender.phone,
+        avatar: room.sender.avatar,
+        role: room.sender.role,
+      },
+      receiver: {
+        id: room.receiver.id,
+        name:
+          room.receiver.role === 'VENDOR' && room.receiver.vendorOnboarding?.businessName
+            ? room.receiver.vendorOnboarding.businessName
+            : `${room.receiver.firstName} ${room.receiver.lastName}`,
+        email: room.receiver.email,
+        phone: room.receiver.phone,
+        avatar: room.receiver.avatar,
+        role: room.receiver.role,
+      },
+    }));
+};
 
 
 export const getClientChatList = async (userId: string) => {
@@ -306,25 +308,25 @@ export const getVendorChatList = async (userId: string) => {
 
 
 
-// export const getChatPreviews = async (userId: string) => {
-//   const rooms = await getChatListForUser(userId);
+export const getChatPreviews = async (userId: string) => {
+  const rooms = await getChatListForUser(userId);
 
-//   const previews = await Promise.all(
-//     rooms.map(async (room) => {
-//       const lastMessage = await prisma.message.findFirst({
-//         where: { roomId: room.roomId },
-//         orderBy: { createdAt: "desc" },
-//       });
+  const previews = await Promise.all(
+    rooms.map(async (room) => {
+      const lastMessage = await prisma.message.findFirst({
+        where: { roomId: room.roomId },
+        orderBy: { createdAt: "desc" },
+      });
 
-//       return {
-//         roomId: room.roomId,
-//         lastMessage,
-//       };
-//     })
-//   );
+      return {
+        roomId: room.roomId,
+        lastMessage,
+      };
+    })
+  );
 
-//   return previews;
-// };
+  return previews;
+};
 
 
 
