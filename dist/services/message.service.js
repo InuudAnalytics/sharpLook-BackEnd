@@ -174,6 +174,7 @@ const getClientChatList = async (userId) => {
             select: {
                 roomId: true,
                 createdAt: true,
+                message: true,
                 sender: {
                     select: {
                         id: true,
@@ -182,6 +183,7 @@ const getClientChatList = async (userId) => {
                         lastName: true,
                         email: true,
                         avatar: true,
+                        phone: true,
                         vendorOnboarding: { select: { businessName: true } },
                     },
                 },
@@ -193,6 +195,7 @@ const getClientChatList = async (userId) => {
                         lastName: true,
                         email: true,
                         avatar: true,
+                        phone: true,
                         vendorOnboarding: { select: { businessName: true } },
                     },
                 },
@@ -206,11 +209,13 @@ const getClientChatList = async (userId) => {
         return {
             roomId: message.roomId,
             createdAt: message.createdAt,
+            message: message.message,
             vendor: {
                 id: otherUser.id,
                 name: otherUser.vendorOnboarding?.businessName || `${otherUser.firstName} ${otherUser.lastName}`,
                 email: otherUser.email,
                 avatar: otherUser.avatar,
+                phoneNumber: otherUser.phone
             },
         };
     }));
@@ -223,7 +228,7 @@ const getVendorChatList = async (userId) => {
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
         },
-        select: { roomId: true },
+        select: { roomId: true, message: true },
         distinct: ['roomId'],
     });
     const roomIdList = roomIds.map((r) => r.roomId);
@@ -235,6 +240,7 @@ const getVendorChatList = async (userId) => {
             select: {
                 roomId: true,
                 createdAt: true,
+                message: true,
                 sender: {
                     select: {
                         id: true,
@@ -243,6 +249,7 @@ const getVendorChatList = async (userId) => {
                         lastName: true,
                         email: true,
                         avatar: true,
+                        phone: true,
                     },
                 },
                 receiver: {
@@ -253,6 +260,7 @@ const getVendorChatList = async (userId) => {
                         lastName: true,
                         email: true,
                         avatar: true,
+                        phone: true,
                     },
                 },
             },
@@ -265,11 +273,13 @@ const getVendorChatList = async (userId) => {
         return {
             roomId: message.roomId,
             createdAt: message.createdAt,
+            message: message.message,
             client: {
                 id: otherUser.id,
                 name: `${otherUser.firstName} ${otherUser.lastName}`,
                 email: otherUser.email,
                 avatar: otherUser.avatar,
+                phoneNumber: otherUser.phone,
             },
         };
     }));
