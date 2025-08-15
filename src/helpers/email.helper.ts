@@ -27,12 +27,14 @@ export const sendVendorOrderEmail = async (
     phone,
     items,
     total,
+    deliveryType,
   }: {
     name: string;
     clientName: string;
     phone: string;
     items: { productName: string; quantity: number; price: number; total: number }[];
     total: number;
+    deliveryType: string
   }
 ) => {
   const productList = items

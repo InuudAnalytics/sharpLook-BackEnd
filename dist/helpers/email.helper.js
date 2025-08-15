@@ -23,7 +23,7 @@ const sendMail = async (to, subject, html) => {
     });
 };
 exports.sendMail = sendMail;
-const sendVendorOrderEmail = async (to, { name, clientName, phone, items, total, }) => {
+const sendVendorOrderEmail = async (to, { name, clientName, phone, items, total, deliveryType, }) => {
     const productList = items
         .map((item) => `<li style="margin-bottom: 6px;"><strong>${item.productName}</strong> — ₦${item.price} × ${item.quantity} = <strong>₦${item.total}</strong></li>`)
         .join("");

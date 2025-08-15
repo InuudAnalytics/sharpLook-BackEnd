@@ -134,6 +134,7 @@ const checkoutCart = async (userId, reference, deliveryType = "SHIPPING") => {
             phone: `${user.phone}`,
             items: data.items,
             total: vendorTotal,
+            deliveryType
         });
     }
     // Return the created order with items & product->vendor populated for frontend

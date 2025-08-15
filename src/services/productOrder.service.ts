@@ -162,6 +162,7 @@ export const checkoutCart = async (userId: string, reference?: string,   deliver
       phone: `${user.phone}`,
       items: data.items,
       total: vendorTotal,
+      deliveryType
     });
   }
 
