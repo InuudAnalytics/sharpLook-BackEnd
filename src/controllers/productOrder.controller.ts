@@ -6,7 +6,15 @@ import { success } from "zod";
 
 export const checkoutCart = async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const { reference, deliveryType } = req.body || {};
+  const { reference } = req.body || {};
+  const {deliveryType} = req.body
+
+  if (!deliveryType){
+    res.status(400).json({
+      success: false,
+      message: 'Delivery Type is Required'
+    })
+  }
 
   try {
     const order = await ProductOrderService.checkoutCart(userId!, reference, deliveryType);

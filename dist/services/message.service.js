@@ -157,186 +157,136 @@ const getChatListForUser = async (userId) => {
 };
 exports.getChatListForUser = getChatListForUser;
 const getClientChatList = async (userId) => {
-    // Step 1: Get all distinct room IDs involving the user
-    const roomIds = await prisma_1.default.message.findMany({
+    // Get all messages where the user is either the sender or receiver
+    const messages = await prisma_1.default.message.findMany({
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
         },
-        select: { roomId: true },
-        distinct: ['roomId'],
+        orderBy: { createdAt: 'desc' },
+        select: {
+            roomId: true,
+            createdAt: true,
+            message: true,
+            sender: {
+                select: {
+                    id: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    avatar: true,
+                    phone: true,
+                    vendorOnboarding: { select: { businessName: true } },
+                },
+            },
+            receiver: {
+                select: {
+                    id: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    avatar: true,
+                    phone: true,
+                    vendorOnboarding: { select: { businessName: true } },
+                },
+            },
+        },
     });
-    const roomIdList = roomIds.map((r) => r.roomId);
-    // Step 2: Fetch messages for each room + vendor info
-    const chatList = await Promise.all(roomIdList.map(async (roomId) => {
-        const messages = await prisma_1.default.message.findMany({
-            where: { roomId },
-            orderBy: { createdAt: 'asc' },
-            select: {
-                id: true,
-                message: true,
-                createdAt: true,
-                senderId: true,
-                receiverId: true,
-                sender: {
-                    select: {
-                        id: true,
-                        role: true,
-                        firstName: true,
-                        lastName: true,
-                        avatar: true,
-                    },
-                },
-                receiver: {
-                    select: {
-                        id: true,
-                        role: true,
-                        firstName: true,
-                        lastName: true,
-                        avatar: true,
-                    },
-                },
-            },
-        });
-        if (!messages || messages.length === 0)
-            return null;
-        // Find the vendor participant in the conversation
-        const firstMsg = messages[0];
-        const userIsSender = firstMsg.sender.id === userId;
-        const otherUser = userIsSender ? firstMsg.receiver : firstMsg.sender;
+    // Group messages by roomId and attach vendor info
+    const grouped = messages.reduce((acc, message) => {
+        const otherUser = message.sender.id === userId ? message.receiver : message.sender;
         if (otherUser.role !== 'VENDOR')
-            return null;
-        const vendor = await prisma_1.default.user.findUnique({
-            where: { id: otherUser.id },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                avatar: true,
-                firstName: true,
-                lastName: true,
-                vendorOnboarding: { select: { businessName: true } },
-            },
+            return acc;
+        if (!acc[message.roomId]) {
+            acc[message.roomId] = {
+                roomId: message.roomId,
+                vendor: {
+                    id: otherUser.id,
+                    name: otherUser.vendorOnboarding?.businessName || `${otherUser.firstName} ${otherUser.lastName}`,
+                    email: otherUser.email,
+                    avatar: otherUser.avatar,
+                    phoneNumber: otherUser.phone,
+                },
+                messages: [],
+            };
+        }
+        acc[message.roomId].messages.push({
+            createdAt: message.createdAt,
+            message: message.message,
+            senderId: message.sender.id,
         });
-        if (!vendor)
-            return null;
-        return {
-            roomId,
-            vendor: {
-                id: vendor.id,
-                name: vendor.vendorOnboarding?.businessName || `${vendor.firstName} ${vendor.lastName}`,
-                email: vendor.email,
-                avatar: vendor.avatar,
-                phoneNumber: vendor.phone,
-            },
-            messages: messages.map((msg) => ({
-                id: msg.id,
-                message: msg.message,
-                createdAt: msg.createdAt,
-                from: {
-                    id: msg.sender.id,
-                    name: `${msg.sender.firstName} ${msg.sender.lastName}`,
-                    avatar: msg.sender.avatar,
-                },
-                to: {
-                    id: msg.receiver.id,
-                    name: `${msg.receiver.firstName} ${msg.receiver.lastName}`,
-                    avatar: msg.receiver.avatar,
-                },
-            })),
-        };
-    }));
-    return chatList.filter(Boolean);
+        return acc;
+    }, {});
+    return Object.values(grouped);
 };
 exports.getClientChatList = getClientChatList;
 const getVendorChatList = async (userId) => {
-    // Step 1: Get all distinct room IDs involving the vendor
-    const roomIds = await prisma_1.default.message.findMany({
+    // Get all messages where the vendor was involved
+    const messages = await prisma_1.default.message.findMany({
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
         },
-        select: { roomId: true },
-        distinct: ['roomId'],
+        orderBy: { createdAt: 'desc' },
+        select: {
+            roomId: true,
+            createdAt: true,
+            message: true,
+            sender: {
+                select: {
+                    id: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    avatar: true,
+                    phone: true,
+                },
+            },
+            receiver: {
+                select: {
+                    id: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    avatar: true,
+                    phone: true,
+                },
+            },
+        },
     });
-    const roomIdList = roomIds.map((r) => r.roomId);
-    // Step 2: Fetch messages for each room + client info
-    const chatList = await Promise.all(roomIdList.map(async (roomId) => {
-        const messages = await prisma_1.default.message.findMany({
-            where: { roomId },
-            orderBy: { createdAt: 'asc' },
-            select: {
-                id: true,
-                message: true,
-                createdAt: true,
-                senderId: true,
-                receiverId: true,
-                sender: {
-                    select: {
-                        id: true,
-                        role: true,
-                        firstName: true,
-                        lastName: true,
-                        avatar: true,
-                    },
-                },
-                receiver: {
-                    select: {
-                        id: true,
-                        role: true,
-                        firstName: true,
-                        lastName: true,
-                        avatar: true,
-                    },
-                },
-            },
-        });
-        if (!messages || messages.length === 0)
-            return null;
-        // Determine the other user in the conversation (the client)
-        const firstMsg = messages[0];
-        const userIsSender = firstMsg.sender.id === userId;
-        const otherUser = userIsSender ? firstMsg.receiver : firstMsg.sender;
+    // Group messages by roomId and attach client info
+    const grouped = messages.reduce((acc, message) => {
+        const { roomId } = message;
+        if (!roomId)
+            return acc;
+        const otherUser = message.sender.id === userId ? message.receiver : message.sender;
         if (otherUser.role !== 'CLIENT')
-            return null;
-        const client = await prisma_1.default.user.findUnique({
-            where: { id: otherUser.id },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                avatar: true,
-                firstName: true,
-                lastName: true,
-            },
+            return acc;
+        if (!acc[roomId]) {
+            acc[roomId] = {
+                roomId,
+                createdAt: message.createdAt,
+                message: message.message,
+                client: {
+                    id: otherUser.id,
+                    name: `${otherUser.firstName} ${otherUser.lastName}`,
+                    email: otherUser.email,
+                    avatar: otherUser.avatar,
+                    phoneNumber: otherUser.phone,
+                },
+                messages: [],
+            };
+        }
+        acc[roomId].messages.push({
+            createdAt: message.createdAt,
+            message: message.message,
+            senderId: message.sender.id,
         });
-        if (!client)
-            return null;
-        return {
-            roomId,
-            client: {
-                id: client.id,
-                name: `${client.firstName} ${client.lastName}`,
-                email: client.email,
-                avatar: client.avatar,
-                phoneNumber: client.phone,
-            },
-            messages: messages.map((msg) => ({
-                id: msg.id,
-                message: msg.message,
-                createdAt: msg.createdAt,
-                from: {
-                    id: msg.sender.id,
-                    name: `${msg.sender.firstName} ${msg.sender.lastName}`,
-                    avatar: msg.sender.avatar,
-                },
-                to: {
-                    id: msg.receiver.id,
-                    name: `${msg.receiver.firstName} ${msg.receiver.lastName}`,
-                    avatar: msg.receiver.avatar,
-                },
-            })),
-        };
-    }));
-    return chatList.filter(Boolean);
+        return acc;
+    }, {});
+    return Object.values(grouped);
 };
 exports.getVendorChatList = getVendorChatList;
 const getChatPreviews = async (userId) => {

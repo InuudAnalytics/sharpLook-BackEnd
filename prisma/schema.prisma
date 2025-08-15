@@ -217,7 +217,7 @@
       reference String?
       total     Float
       items   OrderItem[]
-      deliveryType DeliveryType  @default(SHIPPING)
+      deliveryType DeliveryType 
 
 
       vendorIds    String[]  
