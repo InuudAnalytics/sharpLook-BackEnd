@@ -9,7 +9,7 @@ import {
  deleteUserAccount
 } from "../services/user.services"
 
-
+import prisma from "../config/prisma"
 
 export const getMyProfile = async (req: Request, res: Response) => {
   try {
@@ -152,5 +152,20 @@ export const handleDeleteAccount = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Delete account error:", error.message);
     return res.status(500).json({ error: error.message || "Internal Server Error" });
+  }
+};
+
+export const updateFcmToken = async (req:Request, res: Response) => {
+  const userId = req.user!.id
+  const { fcmToken } = req.body;
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { fcmToken },
+    });
+    res.status(200).json({ success: true, user });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };

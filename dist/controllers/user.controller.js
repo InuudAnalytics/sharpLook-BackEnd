@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleDeleteAccount = exports.updateAvatar = exports.getAVendorDetails = exports.fetchTopVendors = exports.setClientLocationPreferences = exports.updateMyProfile = exports.getMyProfile = void 0;
+exports.updateFcmToken = exports.handleDeleteAccount = exports.updateAvatar = exports.getAVendorDetails = exports.fetchTopVendors = exports.setClientLocationPreferences = exports.updateMyProfile = exports.getMyProfile = void 0;
 const user_services_1 = require("../services/user.services");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const getMyProfile = async (req, res) => {
     try {
         const user = await (0, user_services_1.getUserById)(req.user.id);
@@ -127,3 +131,18 @@ const handleDeleteAccount = async (req, res) => {
     }
 };
 exports.handleDeleteAccount = handleDeleteAccount;
+const updateFcmToken = async (req, res) => {
+    const userId = req.user.id;
+    const { fcmToken } = req.body;
+    try {
+        const user = await prisma_1.default.user.update({
+            where: { id: userId },
+            data: { fcmToken },
+        });
+        res.status(200).json({ success: true, user });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+exports.updateFcmToken = updateFcmToken;

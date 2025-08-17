@@ -15,5 +15,6 @@ router.get("/topVendors", user_controller_1.fetchTopVendors);
 router.get("/getVendorDetails", user_controller_1.getAVendorDetails);
 router.get("/products/top-selling", product_controller_1.fetchTopSellingProducts);
 router.put("/avatar", auth_middleware_1.verifyToken, upload_middleware_1.uploadSingle3, user_controller_1.updateAvatar);
+router.put("/updateFcmToken", auth_middleware_1.verifyToken, user_controller_1.updateFcmToken);
 router.delete("/delete", auth_middleware_1.verifyToken, user_controller_1.handleDeleteAccount);
 exports.default = router;
