@@ -35,8 +35,8 @@ router.get("/filter-by-service", filterVendorsByService)
 router.post("/setVendorAvailability", verifyToken, requireRole(["VENDOR"]), updateAvailability)
 router.get("/getVendorAvailability", verifyToken, requireRole(["VENDOR"]),  fetchAvailability)
 router.put("/update-service-radius",verifyToken,requireRole(["VENDOR"]),updateServiceRadius)
-router.get("/analytics/:vendorId", fetchVendorAnalytics);
-router.get("/earnings-graph", requireRole(["VENDOR"]), fetchVendorEarningsGraph);
+router.get("/analytics/:vendorId", verifyToken, fetchVendorAnalytics);
+router.get("/earnings-graph", verifyToken, requireRole(["VENDOR"]), fetchVendorEarningsGraph);
 router.post('/mark-vendor-paid', verifyToken,  requireRole(["VENDOR"]), markVendorAsPaidController );
 router.get('/getMySub', verifyToken,  requireRole(["VENDOR"]), getVendorSubscriptionController );
 

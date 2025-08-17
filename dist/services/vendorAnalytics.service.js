@@ -7,11 +7,11 @@ exports.getVendorEarningsGraphData = exports.getVendorAnalytics = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const client_1 = require("@prisma/client");
 const getVendorAnalytics = async (vendorId) => {
-    // Fetch products sold by vendor, only approved ones
+    // Fetch approved products sold by vendor
     const products = await prisma_1.default.product.findMany({
         where: {
             vendorId,
-            approvalStatus: client_1.ApprovalStatus.APPROVED, // filter here to only approved products
+            approvalStatus: client_1.ApprovalStatus.APPROVED,
         },
         select: {
             id: true,
@@ -23,7 +23,7 @@ const getVendorAnalytics = async (vendorId) => {
     });
     const totalProductRevenue = products.reduce((acc, p) => acc + p.unitsSold * p.price, 0);
     const totalUnitsSold = products.reduce((acc, p) => acc + p.unitsSold, 0);
-    // Fetch bookings by vendor
+    // Fetch bookings by vendor including client details
     const bookings = await prisma_1.default.booking.findMany({
         where: { vendorId },
         select: {
@@ -33,11 +33,19 @@ const getVendorAnalytics = async (vendorId) => {
             price: true,
             status: true,
             createdAt: true,
+            client: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                },
+            },
         },
     });
     const completedBookings = bookings.filter(b => b.status === "COMPLETED");
     const bookingRevenue = completedBookings.reduce((sum, b) => sum + b.price, 0);
-    // Bookings created within the last 7 days
+    // Count bookings created within the last 7 days
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const newBookingsCount = bookings.filter(b => b.createdAt >= oneWeekAgo).length;
     // Count disputes related to vendor bookings
@@ -46,8 +54,34 @@ const getVendorAnalytics = async (vendorId) => {
             booking: { vendorId },
         },
     });
-    // Prepare recent earnings items from bookings and products in last 7 days
+    // Fetch vendor orders by vendor with order and user details
+    const vendorOrders = await prisma_1.default.vendorOrder.findMany({
+        where: { vendorId },
+        select: {
+            id: true,
+            total: true,
+            status: true,
+            createdAt: true,
+            order: {
+                select: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            phone: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    // Filter completed vendorOrders and sum revenue
+    const completedVendorOrders = vendorOrders.filter(vo => vo.status === "DELIVERED");
+    const vendorOrderRevenue = completedVendorOrders.reduce((sum, vo) => sum + vo.total, 0);
+    // Prepare recent earning items from bookings and vendorOrders in last 7 days
     const recentBookings = completedBookings.filter(b => b.createdAt >= oneWeekAgo);
+    const recentVendorOrders = completedVendorOrders.filter(vo => vo.createdAt >= oneWeekAgo);
     const recentEarningItems = [
         ...recentBookings.map(b => ({
             type: "BOOKING",
@@ -55,25 +89,34 @@ const getVendorAnalytics = async (vendorId) => {
             name: b.serviceName,
             amount: b.price,
             date: b.createdAt,
+            clientDetails: b.client ? {
+                firstName: b.client.firstName,
+                lastName: b.client.lastName,
+                email: b.client.email,
+                phone: b.client.phone,
+            } : null,
         })),
-        ...products
-            .filter(p => p.unitsSold > 0)
-            .map(p => ({
-            type: "PRODUCT",
-            sourceId: p.id,
-            name: p.productName,
-            amount: p.price * p.unitsSold,
-            date: p.updatedAt ?? new Date(),
+        ...recentVendorOrders.map(vo => ({
+            type: "VENDOR_ORDER",
+            sourceId: vo.id,
+            name: `Order #${vo.id}`,
+            amount: vo.total,
+            date: vo.createdAt,
+            clientDetails: vo.order?.user ? {
+                firstName: vo.order.user.firstName,
+                lastName: vo.order.user.lastName,
+                email: vo.order.user.email,
+                phone: vo.order.user.phone,
+            } : null,
         })),
     ];
-    const recentEarnings = recentEarningItems
-        .filter(e => e.date >= oneWeekAgo)
-        .sort((a, b) => b.date.getTime() - a.date.getTime());
+    const recentEarnings = recentEarningItems.sort((a, b) => b.date.getTime() - a.date.getTime());
     return {
-        totalRevenue: totalProductRevenue + bookingRevenue,
+        totalRevenue: totalProductRevenue + bookingRevenue + vendorOrderRevenue,
         totalProductRevenue,
         totalUnitsSold,
         bookingRevenue,
+        vendorOrderRevenue,
         newBookingsCount,
         disputesCount,
         recentEarnings,
