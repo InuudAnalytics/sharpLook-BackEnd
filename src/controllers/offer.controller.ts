@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import * as OfferService from "../services/offer.service";
 import { createNotification, notifyNearbyVendors } from "../services/notification.service";
 import { uploadBufferToCloudinary } from "../utils/cloudinary";
-
+import { notifyUser } from "../helpers/notifyUser.helper"; 
 
 
 export const handleCreateOffer = async (req: Request, res: Response) => {
@@ -68,7 +68,7 @@ export const handleCreateOffer = async (req: Request, res: Response) => {
       serviceImageUrl
     );
 
-    // Notify vendors nearby
+  
     try {
       await notifyNearbyVendors(offer);
     } catch (notifyErr) {

@@ -9,6 +9,7 @@ const client_1 = require("@prisma/client");
 const wallet_service_1 = require("./wallet.service");
 const paystack_1 = require("../utils/paystack"); // if Paystack used
 const notification_service_1 = require("./notification.service");
+const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const createBooking = async (clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, referencePhoto) => {
     if (paymentMethod === "SHARP-PAY") {
         const wallet = await (0, wallet_service_1.getUserWallet)(clientId);
@@ -96,7 +97,10 @@ const markBookingCompletedByClient = async (bookingId, creditReference) => {
         const updated = await prisma_1.default.booking.update({
             where: { id: bookingId },
             data: { clientCompleted: true },
+            include: { vendor: true, client: true }, // 👈 so we can notify
         });
+        // ✅ notify vendor that client marked completed
+        await (0, notifyUser_helper_1.notifyUser)(updated.vendorId, "Booking Update", `Your client has marked booking #${updated.id} as completed.`);
         if (updated.vendorCompleted) {
             await finalizeBookingPayment(updated, creditReference);
         }
@@ -110,7 +114,12 @@ const markBookingCompletedByClient = async (bookingId, creditReference) => {
         const updated = await prisma_1.default.serviceOfferBooking.update({
             where: { id: bookingId },
             data: { clientCompleted: true },
+            include: { vendor: true, client: true },
         });
+        // ✅ notify vendor
+        await (0, notifyUser_helper_1.notifyUser)(updated.vendorId, "Booking Update", `Your client has marked service offer booking #${updated.id} as completed.`);
+        // ✅ notify client
+        await (0, notifyUser_helper_1.notifyUser)(updated.clientId, "Booking Update", `You have successfully marked service offer booking #${updated.id} as completed.`);
         if (updated.vendorCompleted) {
             await finalizeServiceOfferBookingPayment(updated, creditReference);
         }

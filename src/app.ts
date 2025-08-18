@@ -33,7 +33,7 @@ import cartRoutes from "./routes/cart.routes"
 import productOrderRoutes from "./routes/productOrder.route";
 import distanceRoutes from "./routes/distance.routes"
 
-
+import expoNotify from "./routes/expoNotify"
 
 
 
@@ -70,6 +70,7 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true }))
 app.use("/api/v1/admin", adminRoutes)
+app.use("/api/v1/expo", expoNotify)
 app.use("/api/v1/vendor", vendorRoutes)
 app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1/user", userRoutes)

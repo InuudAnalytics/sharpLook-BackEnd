@@ -33,6 +33,7 @@ const clientService_routes_1 = __importDefault(require("./routes/clientService.r
 const cart_routes_1 = __importDefault(require("./routes/cart.routes"));
 const productOrder_route_1 = __importDefault(require("./routes/productOrder.route"));
 const distance_routes_1 = __importDefault(require("./routes/distance.routes"));
+const expoNotify_1 = __importDefault(require("./routes/expoNotify"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const allowedOrigins = [
@@ -55,6 +56,7 @@ app.use((req, res, next) => {
 });
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use("/api/v1/admin", admin_routes_1.default);
+app.use("/api/v1/expo", expoNotify_1.default);
 app.use("/api/v1/vendor", vendor_routes_1.default);
 app.use("/api/v1/auth", auth_routes_1.default);
 app.use("/api/v1/user", user_routes_1.default);

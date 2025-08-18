@@ -3,6 +3,7 @@ import { BookingStatus, PaymentStatus, Booking, ServiceOfferBooking, } from "@pr
 import { debitWallet, getUserWallet, creditWallet } from "./wallet.service";
 import { verifyPayment } from "../utils/paystack"; // if Paystack used
 import { createNotification } from "./notification.service";
+import { notifyUser } from "../helpers/notifyUser.helper"; 
 
 export const createBooking = async (
   clientId: string,
@@ -107,6 +108,8 @@ export const updateBookingStatus = async (
   });
 };
 
+
+
 export const markBookingCompletedByClient = async (
   bookingId: string,
   creditReference: string
@@ -118,7 +121,18 @@ export const markBookingCompletedByClient = async (
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { clientCompleted: true },
+      include: { vendor: true, client: true }, // 👈 so we can notify
     });
+
+    // ✅ notify vendor that client marked completed
+    await notifyUser(
+      updated.vendorId,
+      "Booking Update",
+      `Your client has marked booking #${updated.id} as completed.`
+    );
+
+  
+  
 
     if (updated.vendorCompleted) {
       await finalizeBookingPayment(updated, creditReference);
@@ -136,7 +150,22 @@ export const markBookingCompletedByClient = async (
     const updated = await prisma.serviceOfferBooking.update({
       where: { id: bookingId },
       data: { clientCompleted: true },
+      include: { vendor: true, client: true },
     });
+
+    // ✅ notify vendor
+    await notifyUser(
+      updated.vendorId,
+      "Booking Update",
+      `Your client has marked service offer booking #${updated.id} as completed.`
+    );
+
+    // ✅ notify client
+    await notifyUser(
+      updated.clientId,
+      "Booking Update",
+      `You have successfully marked service offer booking #${updated.id} as completed.`
+    );
 
     if (updated.vendorCompleted) {
       await finalizeServiceOfferBookingPayment(updated, creditReference);
@@ -148,6 +177,7 @@ export const markBookingCompletedByClient = async (
   // If neither booking type was found
   throw new Error("Booking not found");
 };
+
 
 
 

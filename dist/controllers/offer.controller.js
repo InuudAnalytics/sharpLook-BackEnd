@@ -89,7 +89,6 @@ const handleCreateOffer = async (req, res) => {
             }
         }
         const offer = await OfferService.createServiceOffer(clientId, data, serviceImageUrl);
-        // Notify vendors nearby
         try {
             await (0, notification_service_1.notifyNearbyVendors)(offer);
         }
