@@ -351,7 +351,7 @@ export const acceptBookingHandler = async (req: Request, res: Response) => {
     console.log(`Emitting bookingUpdated to room: booking_${bookingId}`, { bookingId: booking.id, status: booking.status });
 
     io.to(`booking_${bookingId}`).emit("bookingUpdated", {
-      bookingId: booking.id,
+      bookingId: bookingId,
       status: booking.status,
       message: "Booking accepted by vendor",
     });

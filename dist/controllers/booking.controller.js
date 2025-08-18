@@ -235,7 +235,7 @@ const acceptBookingHandler = async (req, res) => {
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
         console.log(`Emitting bookingUpdated to room: booking_${bookingId}`, { bookingId: booking.id, status: booking.status });
         server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
-            bookingId: booking.id,
+            bookingId: bookingId,
             status: booking.status,
             message: "Booking accepted by vendor",
         });
