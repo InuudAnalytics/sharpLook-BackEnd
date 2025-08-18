@@ -169,7 +169,7 @@ export const updateVendorOrderDisputeStatus = async (
           where: { id: vendorOrder.id },
           data: {
             paidOut: false,
-            status: "DELIVERED",
+            status: "RESOLVED",
           },
         });
       }

@@ -144,7 +144,6 @@
       toTime    String // e.g., "17:00"
       createdAt DateTime @default(now())
       updatedAt DateTime @updatedAt
-
       vendor User @relation(fields: [vendorId], references: [id])
     }
       model Booking {
@@ -288,6 +287,7 @@
     DELIVERED
     COMPLETED
     REJECTED
+    RESOLVED
   }
 
     model Notification {

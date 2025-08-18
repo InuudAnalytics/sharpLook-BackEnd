@@ -137,7 +137,7 @@ const updateVendorOrderDisputeStatus = async (disputeId, status, resolution) => 
                     where: { id: vendorOrder.id },
                     data: {
                         paidOut: false,
-                        status: "DELIVERED",
+                        status: "RESOLVED",
                     },
                 });
             }
