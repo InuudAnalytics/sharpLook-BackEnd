@@ -170,6 +170,11 @@ const markBookingCompletedByClient = async (req, res) => {
     const { reference, bookingId } = req.body;
     try {
         const updatedBooking = await BookingService.markBookingCompletedByClient(bookingId, reference);
+        server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+            bookingId: bookingId,
+            status: updatedBooking.status,
+            message: "Booking Completed by vendor",
+        });
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by client.",
@@ -187,6 +192,11 @@ const markBookingCompletedByVendor = async (req, res) => {
     const { reference, bookingId } = req.body;
     try {
         const updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
+        server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+            bookingId: bookingId,
+            status: updatedBooking.status,
+            message: "Booking Completed by vendor",
+        });
         return res.status(200).json({
             success: true,
             message: "Booking marked as completed by vendor.",
@@ -223,6 +233,7 @@ const acceptBookingHandler = async (req, res) => {
         const { bookingId } = req.body;
         const vendorId = req.user.id;
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
+        console.log(`Emitting bookingUpdated to room: booking_${bookingId}`, { bookingId: booking.id, status: booking.status });
         server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
             bookingId: booking.id,
             status: booking.status,

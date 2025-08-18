@@ -240,7 +240,11 @@ export const markBookingCompletedByClient = async (req: Request, res: Response) 
       bookingId,
       reference
     );
-
+     io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+      bookingId: bookingId,
+      status: updatedBooking.status,
+      message: "Booking Completed by vendor",
+    });
 
     return res.status(200).json({
       success: true,
@@ -259,6 +263,13 @@ export const markBookingCompletedByVendor = async (req: Request, res: Response) 
   const {reference, bookingId} = req.body
   try {
     const updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
+
+        io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+      bookingId: bookingId,
+      status: updatedBooking.status,
+      message: "Booking Completed by vendor",
+    });
+
     return res.status(200).json({
       success: true,
       message: "Booking marked as completed by vendor.",
@@ -335,6 +346,9 @@ export const acceptBookingHandler = async (req: Request, res: Response) => {
     const vendorId = req.user!.id
 
     const booking = await acceptBooking(vendorId, bookingId);
+
+
+    console.log(`Emitting bookingUpdated to room: booking_${bookingId}`, { bookingId: booking.id, status: booking.status });
 
     io.to(`booking_${bookingId}`).emit("bookingUpdated", {
       bookingId: booking.id,
