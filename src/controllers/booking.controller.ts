@@ -331,12 +331,12 @@ const booking = await homeServiceCreateBooking(
 
 export const acceptBookingHandler = async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.params
+    const { bookingId } = req.body
     const vendorId = req.user!.id
 
     const booking = await acceptBooking(vendorId, bookingId);
 
-    io.to(`booking_${booking.id}`).emit("bookingUpdated", {
+    io.to(`booking_${bookingId}`).emit("bookingUpdated", {
       bookingId: booking.id,
       status: booking.status,
       message: "Booking accepted by vendor",

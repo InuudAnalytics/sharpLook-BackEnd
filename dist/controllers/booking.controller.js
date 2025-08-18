@@ -220,10 +220,10 @@ const createHomeServiceBooking = async (req, res) => {
 exports.createHomeServiceBooking = createHomeServiceBooking;
 const acceptBookingHandler = async (req, res) => {
     try {
-        const { bookingId } = req.params;
+        const { bookingId } = req.body;
         const vendorId = req.user.id;
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
-        server_1.io.to(`booking_${booking.id}`).emit("bookingUpdated", {
+        server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
             bookingId: booking.id,
             status: booking.status,
             message: "Booking accepted by vendor",
