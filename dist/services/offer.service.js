@@ -96,6 +96,7 @@ const getVendorsForOffer = async (offerId) => {
                     lastName: true,
                     email: true,
                     phone: true,
+                    avatar: true,
                     vendorOnboarding: true,
                     vendorServices: true,
                     vendorReviews: true,
@@ -375,6 +376,7 @@ const getClientOffers = async (clientId) => {
                             lastName: true,
                             email: true,
                             phone: true,
+                            avatar: true,
                             vendorOnboarding: {
                                 select: {
                                     businessName: true,

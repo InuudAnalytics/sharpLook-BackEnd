@@ -73,6 +73,7 @@ export const getVendorsForOffer = async (offerId: string) => {
           lastName: true,
           email: true,
           phone: true,
+          avatar: true,
           vendorOnboarding: true,
           vendorServices: true,
           vendorReviews: true,
@@ -443,6 +444,7 @@ export const getClientOffers = async (clientId: string) => {
               lastName: true,
               email: true,
               phone: true,
+              avatar: true,
               vendorOnboarding: {
                 select: {
                   businessName: true,
