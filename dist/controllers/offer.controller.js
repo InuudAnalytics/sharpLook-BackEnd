@@ -37,6 +37,7 @@ exports.tipOffer = exports.getMyOffers = exports.getAllAvailableOffersHandler = 
 const OfferService = __importStar(require("../services/offer.service"));
 const notification_service_1 = require("../services/notification.service");
 const cloudinary_1 = require("../utils/cloudinary");
+const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const handleCreateOffer = async (req, res) => {
     try {
         const data = req.body;
@@ -152,6 +153,10 @@ const selectVendorController = async (req, res) => {
     if (result.success) {
         await (0, notification_service_1.createNotification)(clientId, `Your booking for a service Offer has been placed successfully.`);
         await (0, notification_service_1.createNotification)(selectedVendorId, `The Service offer you accepted has been acknowledged and requested`);
+        // 🔔 Notify the vendor about new booking
+        await (0, notifyUser_helper_1.notifyUser)(selectedVendorId, `The Service offer you accepted has been acknowledged and requested`, "BOOKING");
+        // 🔔 Optionally notify the client too
+        await (0, notifyUser_helper_1.notifyUser)(clientId, `Your booking for a service Offer has been placed successfully.`, "BOOKING");
         return res.status(200).json(result);
     }
     else {

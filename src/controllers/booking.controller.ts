@@ -11,7 +11,7 @@ import uploadToCloudinary from "../utils/cloudinary";
 import prisma from "../config/prisma";
 import { pushNotificationService } from "../services/pushNotifications.service";
 import { notifyUser } from "../helpers/notifyUser.helper"; 
-
+import { io } from "../server"; // your Socket.io instance
 
 export const bookVendor = async (req: Request, res: Response) => {
   const {
@@ -162,7 +162,12 @@ export const changeBookingStatus = async (req: Request, res: Response) => {
 
       } else if (completedBy === "VENDOR") {
         updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
-
+        
+         io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+          bookingId,
+          status: updatedBooking.status,
+          completedBy: completedBy || null,
+        });
         await createNotification(
           booking.clientId!,
           `Vendor marked booking for ${booking.serviceName} as completed.`
@@ -331,7 +336,12 @@ export const acceptBookingHandler = async (req: Request, res: Response) => {
 
     const booking = await acceptBooking(vendorId, bookingId);
 
-    // Notify client about acceptance
+    io.to(`booking_${booking.id}`).emit("bookingUpdated", {
+      bookingId: booking.id,
+      status: booking.status,
+      message: "Booking accepted by vendor",
+    });
+
     if (booking.clientId) {
       await notifyUser(
         booking.clientId,

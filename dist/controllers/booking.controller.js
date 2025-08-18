@@ -42,6 +42,7 @@ const notification_service_1 = require("../services/notification.service");
 const booking_service_1 = require("../services/booking.service");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
 const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
+const server_1 = require("../server"); // your Socket.io instance
 const bookVendor = async (req, res) => {
     const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod } = req.body;
     console.log("This the vendoir id in booking :", vendorId);
@@ -126,6 +127,11 @@ const changeBookingStatus = async (req, res) => {
             }
             else if (completedBy === "VENDOR") {
                 updatedBooking = await BookingService.markBookingCompletedByVendor(bookingId, reference);
+                server_1.io.to(`booking_${bookingId}`).emit("bookingUpdated", {
+                    bookingId,
+                    status: updatedBooking.status,
+                    completedBy: completedBy || null,
+                });
                 await (0, notification_service_1.createNotification)(booking.clientId, `Vendor marked booking for ${booking.serviceName} as completed.`);
                 await (0, notifyUser_helper_1.notifyUser)(booking.clientId, "Booking Completed", `Vendor marked booking for ${booking.serviceName} as completed.`);
             }
@@ -217,7 +223,11 @@ const acceptBookingHandler = async (req, res) => {
         const { bookingId } = req.params;
         const vendorId = req.user.id;
         const booking = await (0, booking_service_1.acceptBooking)(vendorId, bookingId);
-        // Notify client about acceptance
+        server_1.io.to(`booking_${booking.id}`).emit("bookingUpdated", {
+            bookingId: booking.id,
+            status: booking.status,
+            message: "Booking accepted by vendor",
+        });
         if (booking.clientId) {
             await (0, notifyUser_helper_1.notifyUser)(booking.clientId, 'Booking Accepted', `Your booking for ${booking.serviceName} has been accepted.`);
             await (0, notification_service_1.createNotification)(booking.clientId, `Your booking for ${booking.serviceName} has been accepted.`);

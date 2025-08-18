@@ -4,6 +4,8 @@ import { createNotification } from "../services/notification.service";
 import { messaging } from "firebase-admin";
 import { success } from "zod";
 
+import { notifyUser } from "../helpers/notifyUser.helper"; 
+
 export const checkoutCart = async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const { reference } = req.body || {};
@@ -22,6 +24,14 @@ export const checkoutCart = async (req: Request, res: Response) => {
     await createNotification(
       userId!,
       `Your order of ₦${order!.total} was placed successfully.`
+    );
+
+
+    // 🔔 Optionally notify the client too
+    await notifyUser(
+      userId!,
+      `Your order of ₦${order!.total} was placed successfully.`,
+      "ORDER"
     );
 
     return res.status(201).json({

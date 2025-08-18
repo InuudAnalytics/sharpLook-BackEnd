@@ -8,6 +8,7 @@ import { createNotification } from "./notification.service";
 import { getUserWallet, debitWallet } from "../services/wallet.service";
 import {generateReference} from "../utils/paystack"
 import { ApprovalStatus } from '@prisma/client';
+import { notifyUser } from "../helpers/notifyUser.helper"; 
 
 
 
@@ -159,6 +160,15 @@ export const vendorAcceptOffer = async (
     clientId,
     `${vendorDisplayName} has accepted your request for "${serviceName}".`
   );
+
+   
+
+    // 🔔 Optionally notify the client too
+    await notifyUser(
+      clientId,
+       `${vendorDisplayName} has accepted your request for "${serviceName}".`,
+      "BOOKING"
+    );
 
   // Create vendor offer record
   await prisma.vendorOffer.create({

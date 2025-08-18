@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.completeVendorOrderController = exports.getVendorOrders = exports.getMyOrders = exports.checkoutCart = void 0;
 const ProductOrderService = __importStar(require("../services/productOrder.service"));
 const notification_service_1 = require("../services/notification.service");
+const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const checkoutCart = async (req, res) => {
     const userId = req.user?.id;
     const { reference } = req.body || {};
@@ -49,6 +50,8 @@ const checkoutCart = async (req, res) => {
     try {
         const order = await ProductOrderService.checkoutCart(userId, reference, deliveryType);
         await (0, notification_service_1.createNotification)(userId, `Your order of ₦${order.total} was placed successfully.`);
+        // 🔔 Optionally notify the client too
+        await (0, notifyUser_helper_1.notifyUser)(userId, `Your order of ₦${order.total} was placed successfully.`, "ORDER");
         return res.status(201).json({
             success: true,
             message: reference

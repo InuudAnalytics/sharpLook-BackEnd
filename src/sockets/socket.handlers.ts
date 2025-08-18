@@ -59,8 +59,17 @@ export const registerSocketHandlers = (io: Server) => {
       io.to(roomId).emit("call:ended", { fromUserId });
     });
 
+    
+
     socket.on("disconnect", () => {
       console.log("🔴 Socket disconnected:", socket.id);
     });
+
+    // --- Booking Events ---
+    socket.on("joinBookingRoom", ({ bookingId }) => {
+      socket.join(`booking_${bookingId}`);
+      console.log(`Socket ${socket.id} joined booking room booking_${bookingId}`);
+    });
+
   });
 };

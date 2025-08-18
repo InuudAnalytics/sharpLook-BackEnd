@@ -53,6 +53,11 @@ const registerSocketHandlers = (io) => {
         socket.on("disconnect", () => {
             console.log("🔴 Socket disconnected:", socket.id);
         });
+        // --- Booking Events ---
+        socket.on("joinBookingRoom", ({ bookingId }) => {
+            socket.join(`booking_${bookingId}`);
+            console.log(`Socket ${socket.id} joined booking room booking_${bookingId}`);
+        });
     });
 };
 exports.registerSocketHandlers = registerSocketHandlers;

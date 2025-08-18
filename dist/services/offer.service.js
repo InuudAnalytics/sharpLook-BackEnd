@@ -43,6 +43,7 @@ const notification_service_1 = require("./notification.service");
 const wallet_service_1 = require("../services/wallet.service");
 const paystack_1 = require("../utils/paystack");
 const client_1 = require("@prisma/client");
+const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const createServiceOffer = async (clientId, data, serviceImage) => {
     // const requiredFields = [
     //   "serviceName",
@@ -162,6 +163,8 @@ const vendorAcceptOffer = async (vendorId, offerId, price) => {
         : vendorName;
     // Send notification to client with vendor info
     await (0, notification_service_1.createNotification)(clientId, `${vendorDisplayName} has accepted your request for "${serviceName}".`);
+    // 🔔 Optionally notify the client too
+    await (0, notifyUser_helper_1.notifyUser)(clientId, `${vendorDisplayName} has accepted your request for "${serviceName}".`, "BOOKING");
     // Create vendor offer record
     await prisma_1.default.vendorOffer.create({
         data: {

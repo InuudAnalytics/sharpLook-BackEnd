@@ -19,7 +19,12 @@ const io = new SocketIOServer(server, {
 // Register socket event handlers
 registerSocketHandlers(io);
 
+export { io }; 
+
 // Start server on 0.0.0.0 to allow external access
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
+export default server;

@@ -155,6 +155,20 @@ export const selectVendorController = async (req: Request, res: Response) => {
       `The Service offer you accepted has been acknowledged and requested`
     );
 
+        // 🔔 Notify the vendor about new booking
+    await notifyUser(
+      selectedVendorId,
+      `The Service offer you accepted has been acknowledged and requested` ,
+      "BOOKING"
+    );
+
+    // 🔔 Optionally notify the client too
+    await notifyUser(
+      clientId,
+      `Your booking for a service Offer has been placed successfully.`,
+      "BOOKING"
+    );
+
     return res.status(200).json(result);
   } else {
     return res.status(500).json(result);
