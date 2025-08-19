@@ -70,7 +70,7 @@ export const register = async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       step: "registerUser",
-      message: "Failed to create user.",
+      message: err.message,
       error: err.message,
     });
   }
@@ -258,9 +258,10 @@ export const verifyOtp = async (req: Request, res: Response) => {
      await verifyOtpService(email, otp);
   }
    else {
-    await verifyOtpService(phone, otp)
+    const smsRes = await verifyOtpService(phone, otp)
+        console.log("✅ OTP verified successfully", smsRes );
+
    }
-    console.log("✅ OTP verified successfully");
 
     return res.status(200).json({
       success: true,

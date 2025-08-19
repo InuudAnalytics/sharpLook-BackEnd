@@ -22,16 +22,28 @@ export const registerUser = async (
   phone: string,
   referredByCode?: string
 ) => {
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email },
+        { phone }
+      ]
+    }
+  });
 
   if (existingUser) {
-    throw new Error("Email already in use");
+    if (existingUser.email === email && existingUser.phone === phone) {
+      throw new Error("Email and phone number already in use");
+    } else if (existingUser.email === email) {
+      throw new Error("Email already in use");
+    } else {
+      throw new Error("Phone number already in use");
+    }
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const referralCode = generateReferralCode();
 
-  // Prepare variables for use outside the transaction
   let creditWalletId: string | null = null;
   let referrerWalletId: string | null = null;
 
@@ -51,7 +63,6 @@ export const registerUser = async (
       referredById = referredByUser.id;
     }
 
-    // Step 1: Create the user
     const user = await tx.user.create({
       data: {
         email,
@@ -66,7 +77,6 @@ export const registerUser = async (
       },
     });
 
-    // Step 2: Create wallet
     const wallet = await tx.wallet.create({
       data: {
         balance: 0,
@@ -75,13 +85,11 @@ export const registerUser = async (
       },
     });
 
-    // Step 3: Update user with walletId
     await tx.user.update({
       where: { id: user.id },
       data: { walletId: wallet.id },
     });
 
-    // Step 4: Handle referral record only (no wallet credit here)
     if (referredById) {
       await tx.referral.create({
         data: {
@@ -91,7 +99,6 @@ export const registerUser = async (
         },
       });
 
-      // Store IDs for wallet credit outside the transaction
       creditWalletId = wallet.id;
 
       const referrerWallet = await tx.wallet.findUnique({
@@ -110,7 +117,6 @@ export const registerUser = async (
     };
   });
 
-  // ✅ OUTSIDE the transaction: Perform wallet credits
   if (creditWalletId) {
     await creditWallet(prisma, creditWalletId, 100);
   }

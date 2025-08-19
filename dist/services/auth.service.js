@@ -12,13 +12,27 @@ const email_helper_1 = require("../helpers/email.helper");
 const referral_1 = require("../utils/referral");
 const wallet_service_1 = require("./wallet.service");
 const registerUser = async (email, password, firstName, lastName, role, acceptedPersonalData, phone, referredByCode) => {
-    const existingUser = await prisma_1.default.user.findUnique({ where: { email } });
+    const existingUser = await prisma_1.default.user.findFirst({
+        where: {
+            OR: [
+                { email },
+                { phone }
+            ]
+        }
+    });
     if (existingUser) {
-        throw new Error("Email already in use");
+        if (existingUser.email === email && existingUser.phone === phone) {
+            throw new Error("Email and phone number already in use");
+        }
+        else if (existingUser.email === email) {
+            throw new Error("Email already in use");
+        }
+        else {
+            throw new Error("Phone number already in use");
+        }
     }
     const hashedPassword = await bcryptjs_1.default.hash(password, 10);
     const referralCode = (0, referral_1.generateReferralCode)();
-    // Prepare variables for use outside the transaction
     let creditWalletId = null;
     let referrerWalletId = null;
     const createdUser = await prisma_1.default.$transaction(async (tx) => {
@@ -33,7 +47,6 @@ const registerUser = async (email, password, firstName, lastName, role, accepted
             }
             referredById = referredByUser.id;
         }
-        // Step 1: Create the user
         const user = await tx.user.create({
             data: {
                 email,
@@ -47,7 +60,6 @@ const registerUser = async (email, password, firstName, lastName, role, accepted
                 ...(referredById && { referredById }),
             },
         });
-        // Step 2: Create wallet
         const wallet = await tx.wallet.create({
             data: {
                 balance: 0,
@@ -55,12 +67,10 @@ const registerUser = async (email, password, firstName, lastName, role, accepted
                 userId: user.id,
             },
         });
-        // Step 3: Update user with walletId
         await tx.user.update({
             where: { id: user.id },
             data: { walletId: wallet.id },
         });
-        // Step 4: Handle referral record only (no wallet credit here)
         if (referredById) {
             await tx.referral.create({
                 data: {
@@ -69,7 +79,6 @@ const registerUser = async (email, password, firstName, lastName, role, accepted
                     amountEarned: 100,
                 },
             });
-            // Store IDs for wallet credit outside the transaction
             creditWalletId = wallet.id;
             const referrerWallet = await tx.wallet.findUnique({
                 where: { userId: referredById },
@@ -84,7 +93,6 @@ const registerUser = async (email, password, firstName, lastName, role, accepted
             wallet,
         };
     });
-    // ✅ OUTSIDE the transaction: Perform wallet credits
     if (creditWalletId) {
         await (0, wallet_service_1.creditWallet)(prisma_1.default, creditWalletId, 100);
     }

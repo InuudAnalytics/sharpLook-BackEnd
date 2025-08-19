@@ -40,7 +40,7 @@ const register = async (req, res) => {
         return res.status(400).json({
             success: false,
             step: "registerUser",
-            message: "Failed to create user.",
+            message: err.message,
             error: err.message,
         });
     }
@@ -203,9 +203,9 @@ const verifyOtp = async (req, res) => {
             await (0, otp_service_1.verifyOtpService)(email, otp);
         }
         else {
-            await (0, otp_service_1.verifyOtpService)(phone, otp);
+            const smsRes = await (0, otp_service_1.verifyOtpService)(phone, otp);
+            console.log("✅ OTP verified successfully", smsRes);
         }
-        console.log("✅ OTP verified successfully");
         return res.status(200).json({
             success: true,
             message: "OTP verified successfully",

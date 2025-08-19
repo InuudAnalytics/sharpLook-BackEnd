@@ -13,7 +13,7 @@ const router = Router()
 
 
 router.get("/me", authenticate, getCurrentUser);
-router.post("/register",validate(registerSchema), register)
+router.post("/register", register)
 router.post("/login", login)
 router.post("/send-otp", sendOtp)
 router.post("/verify-otp", verifyOtp)
