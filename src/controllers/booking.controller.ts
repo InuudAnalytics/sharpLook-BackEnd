@@ -23,13 +23,10 @@ export const bookVendor = async (req: Request, res: Response) => {
     serviceId,
     totalAmount,
     reference,
-    paymentMethod
+    paymentMethod,
   } = req.body;
 
-    console.log("This the vendoir id in booking :", vendorId);
-    
-    // Corrected to match your service
-  // Payment status will be set inside the service based on wallet logic, so no need to send here.
+  console.log("This the vendor id in booking:", vendorId);
 
   if (!vendorId || !date || !time || !price || !serviceName || !serviceId || !totalAmount) {
     return res.status(400).json({
@@ -39,25 +36,26 @@ export const bookVendor = async (req: Request, res: Response) => {
   }
 
   const clientId = req.user?.id!;
-  
-    let referencePhoto = "";
+  let referencePhoto = "";
 
-    // Upload image if file is present
-    if (req.file) {
-      try {
-        const uploadResult = await uploadToCloudinary(
-          req.file.buffer,
-          req.file.mimetype
-        );
-        referencePhoto = uploadResult.secure_url;
-      } catch (uploadErr: any) {
-        console.error("Image upload error:", uploadErr);
-        return res.status(500).json({
-          error: "Failed to upload reference photo. Please try again.",
-        });
-      }
+  if (req.file) {
+    try {
+      const uploadResult = await uploadToCloudinary(
+        req.file.buffer,
+        req.file.mimetype
+      );
+      referencePhoto = uploadResult.secure_url;
+    } catch (uploadErr: any) {
+      console.error("Image upload error:", uploadErr);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload reference photo. Please try again.",
+      });
     }
+  }
+
   try {
+    // ✅ Create booking first
     const booking = await BookingService.createBooking(
       clientId,
       vendorId,
@@ -72,42 +70,45 @@ export const bookVendor = async (req: Request, res: Response) => {
       referencePhoto
     );
 
-    await createNotification(
-      vendorId,
-      `You received a new booking request for ${serviceName} on ${date} at ${time}.`
-    );
-
-    await createNotification(
-      clientId,
-      `Your booking for ${serviceName} has been placed successfully.`
-    );
-
-
-    await notifyUser(
-  vendorId,
-  'New Booking Request',
-  `You have a new booking request for ${serviceName} on ${date} at ${time}.`
-);
-
-    await notifyUser(
-    clientId,
-  'Booking Confirmed',
-  `Your booking for ${serviceName} on ${date} at ${time} was successful.`
-    );
-
-
-    return res.status(201).json({
+    // ✅ Respond success immediately
+    res.status(201).json({
       success: true,
       message: "Booking created successfully",
       data: booking,
     });
+
+    // ✅ Fire notifications asynchronously (won’t block response)
+    Promise.all([
+      createNotification(
+        vendorId,
+        `You received a new booking request for ${serviceName} on ${date} at ${time}.`
+      ),
+      createNotification(
+        clientId,
+        `Your booking for ${serviceName} has been placed successfully.`
+      ),
+      notifyUser(
+        vendorId,
+        "New Booking Request",
+        `You have a new booking request for ${serviceName} on ${date} at ${time}.`
+      ),
+      notifyUser(
+        clientId,
+        "Booking Confirmed",
+        `Your booking for ${serviceName} on ${date} at ${time} was successful.`
+      ),
+    ]).catch((notifyErr) => {
+      console.error("Notification error:", notifyErr);
+    });
+
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Failed to create booking",
     });
   }
 };
+
 
 export const getMyBookings = async (req: Request, res: Response) => {
   try {

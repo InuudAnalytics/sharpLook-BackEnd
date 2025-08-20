@@ -44,10 +44,8 @@ const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
 const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const server_1 = require("../server"); // your Socket.io instance
 const bookVendor = async (req, res) => {
-    const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod } = req.body;
-    console.log("This the vendoir id in booking :", vendorId);
-    // Corrected to match your service
-    // Payment status will be set inside the service based on wallet logic, so no need to send here.
+    const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod, } = req.body;
+    console.log("This the vendor id in booking:", vendorId);
     if (!vendorId || !date || !time || !price || !serviceName || !serviceId || !totalAmount) {
         return res.status(400).json({
             success: false,
@@ -56,7 +54,6 @@ const bookVendor = async (req, res) => {
     }
     const clientId = req.user?.id;
     let referencePhoto = "";
-    // Upload image if file is present
     if (req.file) {
         try {
             const uploadResult = await (0, cloudinary_1.default)(req.file.buffer, req.file.mimetype);
@@ -65,26 +62,34 @@ const bookVendor = async (req, res) => {
         catch (uploadErr) {
             console.error("Image upload error:", uploadErr);
             return res.status(500).json({
-                error: "Failed to upload reference photo. Please try again.",
+                success: false,
+                message: "Failed to upload reference photo. Please try again.",
             });
         }
     }
     try {
+        // ✅ Create booking first
         const booking = await BookingService.createBooking(clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, referencePhoto);
-        await (0, notification_service_1.createNotification)(vendorId, `You received a new booking request for ${serviceName} on ${date} at ${time}.`);
-        await (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} has been placed successfully.`);
-        await (0, notifyUser_helper_1.notifyUser)(vendorId, 'New Booking Request', `You have a new booking request for ${serviceName} on ${date} at ${time}.`);
-        await (0, notifyUser_helper_1.notifyUser)(clientId, 'Booking Confirmed', `Your booking for ${serviceName} on ${date} at ${time} was successful.`);
-        return res.status(201).json({
+        // ✅ Respond success immediately
+        res.status(201).json({
             success: true,
             message: "Booking created successfully",
             data: booking,
+        });
+        // ✅ Fire notifications asynchronously (won’t block response)
+        Promise.all([
+            (0, notification_service_1.createNotification)(vendorId, `You received a new booking request for ${serviceName} on ${date} at ${time}.`),
+            (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} has been placed successfully.`),
+            (0, notifyUser_helper_1.notifyUser)(vendorId, "New Booking Request", `You have a new booking request for ${serviceName} on ${date} at ${time}.`),
+            (0, notifyUser_helper_1.notifyUser)(clientId, "Booking Confirmed", `Your booking for ${serviceName} on ${date} at ${time} was successful.`),
+        ]).catch((notifyErr) => {
+            console.error("Notification error:", notifyErr);
         });
     }
     catch (err) {
         return res.status(500).json({
             success: false,
-            message: err.message,
+            message: err.message || "Failed to create booking",
         });
     }
 };
