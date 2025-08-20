@@ -1,7 +1,7 @@
 import prisma from "../config/prisma";
 import { pushNotificationService } from "../services/pushNotifications.service";
 
-export const notifyUser = async (userId: string, title: string, message: string) => {
+export const notifyUser = async (userId: string, title: string, body: string) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -9,7 +9,7 @@ export const notifyUser = async (userId: string, title: string, message: string)
     });
 
     if (user?.fcmToken) {
-      await pushNotificationService.sendPushNotification(user.fcmToken, title, message);
+      await pushNotificationService.sendPushNotification(user.fcmToken, title, body);
     } else {
       console.log(`No FCM token found for user ${userId}, skipping push notification.`);
     }
