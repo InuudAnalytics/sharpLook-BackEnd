@@ -69,7 +69,7 @@ export const creditWallet = async (
           amount,
           type: TransactionType.CREDIT,
           description,
-          status: "PENDING",
+          status: "CREDIT",
           reference: transactionReference,
         },
       },

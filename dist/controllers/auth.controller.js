@@ -12,7 +12,8 @@ const prisma_1 = __importDefault(require("../config/prisma"));
 // ✅ Correct
 const library_1 = require("@prisma/client/runtime/library");
 const register = async (req, res) => {
-    const { firstName, lastName, email, password, role, phone, referredByCode, acceptedPersonalData, } = req.body;
+    const { firstName, lastName, email: rawEmail, password, role, phone, referredByCode, acceptedPersonalData, } = req.body;
+    const email = rawEmail.toLowerCase();
     console.log("➡️ Register attempt:", { email, role });
     let accepted = false;
     if (acceptedPersonalData === true ||
@@ -67,8 +68,9 @@ const register = async (req, res) => {
 };
 exports.register = register;
 const login = async (req, res) => {
-    const { email, password } = req.body;
-    console.log("➡️ Login attempt:", email);
+    const { email: rawEmail, password } = req.body;
+    console.log("➡️ Login attempt:", rawEmail);
+    const email = rawEmail.toLowerCase();
     try {
         const userCheck = await prisma_1.default.user.findUnique({ where: { email } });
         if (!userCheck) {
@@ -215,7 +217,7 @@ const verifyOtp = async (req, res) => {
         console.error("❌ OTP verification failed:", err.message);
         return res.status(400).json({
             success: false,
-            message: "Invalid or expired OTP",
+            message: err.message,
             error: err.message,
         });
     }

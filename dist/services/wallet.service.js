@@ -61,7 +61,7 @@ const creditWallet = async (tx, walletId, amount, description = "Referral Bonus"
                     amount,
                     type: client_1.TransactionType.CREDIT,
                     description,
-                    status: "PENDING",
+                    status: "CREDIT",
                     reference: transactionReference,
                 },
             },

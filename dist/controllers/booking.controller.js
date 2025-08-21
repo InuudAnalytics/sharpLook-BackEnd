@@ -45,15 +45,27 @@ const notifyUser_helper_1 = require("../helpers/notifyUser.helper");
 const server_1 = require("../server"); // your Socket.io instance
 const bookVendor = async (req, res) => {
     const { vendorId, date, time, price, serviceName, serviceId, totalAmount, reference, paymentMethod, } = req.body;
-    console.log("This the vendor id in booking:", vendorId);
+    console.log("This is the vendor ID in booking:", vendorId);
+    // Validate required fields
     if (!vendorId || !date || !time || !price || !serviceName || !serviceId || !totalAmount) {
         return res.status(400).json({
             success: false,
             message: "Missing required booking details",
         });
     }
+    // Get client ID
     const clientId = req.user?.id;
+    if (!clientId) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized: client ID is missing",
+        });
+    }
+    // Format date and time
+    const formattedDate = formatDate(date);
+    const formattedTime = formatTime(time);
     let referencePhoto = "";
+    // Upload reference photo if provided
     if (req.file) {
         try {
             const uploadResult = await (0, cloudinary_1.default)(req.file.buffer, req.file.mimetype);
@@ -68,25 +80,33 @@ const bookVendor = async (req, res) => {
         }
     }
     try {
-        // ✅ Create booking first
+        // Create the booking
         const booking = await BookingService.createBooking(clientId, vendorId, serviceId, paymentMethod, serviceName, price, totalAmount, time, date, reference, referencePhoto);
-        // ✅ Respond success immediately
-        res.status(201).json({
+        console.log("Booking created:", booking);
+        if (!booking.success) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create booking",
+            });
+        }
+        // Fire notifications (non-blocking)
+        Promise.all([
+            (0, notification_service_1.createNotification)(vendorId, `You received a new booking request for ${serviceName} on ${formattedDate} at ${formattedTime}.`),
+            (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} has been placed successfully for ${formattedDate} at ${formattedTime}.`),
+            (0, notifyUser_helper_1.notifyUser)(vendorId, "New Booking Request", `You have a new booking request for ${serviceName} on ${formattedDate} at ${formattedTime}.`),
+            (0, notifyUser_helper_1.notifyUser)(clientId, "Booking Confirmed", `Your booking for ${serviceName} on ${formattedDate} at ${formattedTime} was successful.`),
+        ]).catch((notifyErr) => {
+            console.error("Notification error:", notifyErr);
+        });
+        // Send success response
+        return res.status(201).json({
             success: true,
             message: "Booking created successfully",
             data: booking,
         });
-        // ✅ Fire notifications asynchronously (won’t block response)
-        Promise.all([
-            (0, notification_service_1.createNotification)(vendorId, `You received a new booking request for ${serviceName} on ${date} at ${time}.`),
-            (0, notification_service_1.createNotification)(clientId, `Your booking for ${serviceName} has been placed successfully.`),
-            (0, notifyUser_helper_1.notifyUser)(vendorId, "New Booking Request", `You have a new booking request for ${serviceName} on ${date} at ${time}.`),
-            (0, notifyUser_helper_1.notifyUser)(clientId, "Booking Confirmed", `Your booking for ${serviceName} on ${date} at ${time} was successful.`),
-        ]).catch((notifyErr) => {
-            console.error("Notification error:", notifyErr);
-        });
     }
     catch (err) {
+        console.error("Booking error:", err);
         return res.status(500).json({
             success: false,
             message: err.message || "Failed to create booking",
@@ -94,6 +114,25 @@ const bookVendor = async (req, res) => {
     }
 };
 exports.bookVendor = bookVendor;
+function formatDate(dateString) {
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    };
+    const parsedDate = new Date(dateString);
+    return parsedDate.toLocaleDateString('en-US', options);
+}
+function formatTime(timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes);
+    return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+}
 const getMyBookings = async (req, res) => {
     try {
         const role = req.user.role;
@@ -152,6 +191,7 @@ const changeBookingStatus = async (req, res) => {
             updatedBooking = await BookingService.updateBookingStatus(bookingId, status);
             await (0, notification_service_1.createNotification)(booking.clientId, `Your booking for ${booking.serviceName} was ${status.toLowerCase()}.`);
             await (0, notification_service_1.createNotification)(booking.vendorId, `You ${status.toLowerCase()} a booking for ${booking.serviceName}.`);
+            await (0, notifyUser_helper_1.notifyUser)(booking.clientId, `Booking ${status} `, `Your booking for ${booking.serviceName} has been ${status}.`);
             if (status === "ACCEPTED") {
                 await (0, notifyUser_helper_1.notifyUser)(booking.clientId, "Booking Accepted", `Your booking for ${booking.serviceName} has been accepted.`);
             }

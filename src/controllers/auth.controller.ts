@@ -20,13 +20,15 @@ export const register = async (req: Request, res: Response) => {
   const {
     firstName,
     lastName,
-    email,
+    email: rawEmail,
     password,
     role,
     phone,
     referredByCode,
     acceptedPersonalData,
   } = req.body;
+
+  const email = rawEmail.toLowerCase();
 
   console.log("➡️ Register attempt:", { email, role });
 
@@ -41,6 +43,7 @@ export const register = async (req: Request, res: Response) => {
 
   let user;
 
+  
   try {
     // ✅ Step 1: Create user
     user = await registerUser(
@@ -101,8 +104,11 @@ export const register = async (req: Request, res: Response) => {
 
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  console.log("➡️ Login attempt:", email);
+  const { email: rawEmail, password } = req.body;
+  console.log("➡️ Login attempt:", rawEmail);
+
+
+  const email = rawEmail.toLowerCase();
 
   try {
     const userCheck = await prisma.user.findUnique({ where: { email } });
@@ -271,7 +277,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     console.error("❌ OTP verification failed:", err.message);
     return res.status(400).json({
       success: false,
-      message: "Invalid or expired OTP",
+      message: err.message,
       error: err.message,
     });
   }

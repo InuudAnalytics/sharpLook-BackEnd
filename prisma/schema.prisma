@@ -25,6 +25,11 @@
       isOtpVerified        Boolean   @default(false)
       otp                  String?   @db.String
       otpExpires           DateTime?
+      otpAttemptCount   Int?     
+      otpLastAttemptAt  DateTime?
+      otpLockUntil      DateTime?
+      otpLastSentAt     DateTime?
+
       acceptedPersonalData Boolean   @default(false)
       name                 String?   @db.String
       avatar               String?   @db.String

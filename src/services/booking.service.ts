@@ -81,9 +81,9 @@ export const updateBookingStatus = async (
     const wallet = await getUserWallet(booking.clientId!);
     if (!wallet) throw new Error("Client wallet not found");
 
-    if (!refundReference) throw new Error("Refund reference required");
+    // if (!refundReference) throw new Error("Refund reference required");
 
-   await creditWallet(prisma, wallet.id, booking.price, "Booking Refund", refundReference);
+   await creditWallet(prisma, wallet.id, booking.price, "Booking Refund");
 
 
     return prisma.booking.update({
