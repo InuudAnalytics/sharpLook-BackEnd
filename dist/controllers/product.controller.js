@@ -204,3 +204,25 @@ const removeProduct = async (req, res) => {
     }
 };
 exports.removeProduct = removeProduct;
+
+
+exports.fetchVendorProducts = fetchVendorProducts;
+const getAllProductsRatings = async (_req, res) => {
+    try {
+        const productsRating = await (0, product_service_2.getAllProductsRatings)();
+        return res.status(200).json({
+            success: true,
+            message: "All products Ratings fetched successfully",
+            data: productsRating,
+        });
+    }
+    catch (err) {
+        console.error("❌ Error fetching all products:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch all products",
+            error: err instanceof client_1.Prisma.PrismaClientKnownRequestError ? err.meta : err.message,
+        });
+    }
+};
+exports.getAllProductsRatings = getAllProductsRatings;
