@@ -190,7 +190,7 @@ exports.deleteProduct = deleteProduct;
 const getAllProductsRatings = async () => {
   const products = await prisma_1.default.product.findMany({
     where: {
-      approvalStatus: client_1.ApprovalStatus.APPROVED,
+approvalStatus: client_1.ApprovalStatus.APPROVED,
     },
     orderBy: {
       createdAt: "desc",
@@ -217,19 +217,25 @@ const getAllProductsRatings = async () => {
           },
         },
       },
+      vendor: {
+        include: {
+          vendorOnboarding: true,
+          products: true,
+        },
+      },
     },
   });
 
-  // Add average rating to each product
+  // Add averageRating to each product (without changing structure)
   const productMap = {};
   for (const product of products) {
     const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
     const reviewCount = product.reviews.length;
-    const averageRating = reviewCount > 0 ? totalRatings / reviewCount : null;
+    const rating = reviewCount > 0 ? parseFloat((totalRatings / reviewCount).toFixed(1)) : null;
 
     productMap[product.id] = {
       ...product,
-      rating: averageRating ? parseFloat(averageRating.toFixed(1)) : null, // rounded to 1 decimal
+      rating, // ✅ added field
     };
   }
 
@@ -239,5 +245,5 @@ const getAllProductsRatings = async () => {
 exports.getAllProductsRatings = getAllProductsRatings;
 
 
-exports.getAllProductsRatings = getAllProductsRatings;
+
 
