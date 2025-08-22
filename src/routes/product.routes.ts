@@ -19,8 +19,10 @@ router.post(
 
 router.get("/getVendorProducts",verifyToken,requireRole(["VENDOR"]),fetchVendorProducts)
 router.get("/getAllProducts", fetchAllProducts)
+router.get("/getAllProductsRatings", getAllProductsRatings)
 router.put("/edit/:productId", verifyToken,  upload.single("picture"), requireRole(["VENDOR"]), editProduct)
 router.delete("/delete/:productId", verifyToken,requireRole(["VENDOR"]), removeProduct)
+getAllProductsRatings
 
 
 export default router
