@@ -59,7 +59,7 @@ exports.getVendorProducts = getVendorProducts;
 const getAllProducts = async () => {
   return await prisma_1.default.product.findMany({
     where: {
-      approvalStatus: ApprovalStatus.APPROVED,
+       approvalStatus: client_1.ApprovalStatus.APPROVED,
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -190,7 +190,7 @@ exports.deleteProduct = deleteProduct;
 const getAllProductsRatings = async () => {
   return await prisma_1.default.product.findMany({
     where: {
-      approvalStatus: ApprovalStatus.APPROVED,
+       approvalStatus: client_1.ApprovalStatus.APPROVED,
     },
     orderBy: { createdAt: "desc" },
     include: {
