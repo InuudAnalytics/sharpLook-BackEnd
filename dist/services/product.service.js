@@ -186,3 +186,39 @@ const deleteProduct = async (productId) => {
     });
 };
 exports.deleteProduct = deleteProduct;
+
+const getAllProductsRatings = async () => {
+  return await prisma.product.findMany({
+    where: {
+      approvalStatus: ApprovalStatus.APPROVED,
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      reviews: {
+        where: {
+          type: 'PRODUCT', // filter to only include product reviews
+        },
+        select: {
+          rating: true,
+          client: {
+            select: {
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+      },
+      vendor: {
+        include: {
+          vendorOnboarding: true,
+          products: true,        
+          
+        },
+      },
+    },
+  });
+};
+
+exports.getAllProductsRatings = getAllProductsRatings;
+
