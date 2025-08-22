@@ -195,16 +195,10 @@ approvalStatus: client_1.ApprovalStatus.APPROVED,
     orderBy: {
       createdAt: "desc",
     },
-    select: {
-      id: true,
-      productName: true,
-      description: true,
-      price: true,
-      picture: true,
-      createdAt: true,
+    include: {
       reviews: {
         where: {
-          type: 'PRODUCT',
+          type: "PRODUCT",
         },
         select: {
           rating: true,
@@ -220,27 +214,52 @@ approvalStatus: client_1.ApprovalStatus.APPROVED,
       vendor: {
         include: {
           vendorOnboarding: true,
+          vendorAvailability: true,
+          vendorServices: true,
+          vendorReviews: {
+            include: {
+              client: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
           products: true,
+          cartItems: true,
+          wishlistItems: true,
+          orders: true,
         },
       },
     },
   });
 
-  // Add averageRating to each product (without changing structure)
-  const productMap = {};
-  for (const product of products) {
+  // Compute average rating and append to each product
+  const enrichedProducts = products.map((product) => {
     const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
     const reviewCount = product.reviews.length;
     const rating = reviewCount > 0 ? parseFloat((totalRatings / reviewCount).toFixed(1)) : null;
 
-    productMap[product.id] = {
+    return {
       ...product,
-      rating, // ✅ added field
+      rating, 
     };
-  }
+  });
 
-  return productMap;
+
+  return {
+    success: true,
+    message: "All products fetched successfully",
+    data: enrichedProducts,
+  };
 };
+
+
 
 exports.getAllProductsRatings = getAllProductsRatings;
 
