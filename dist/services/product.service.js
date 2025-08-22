@@ -1,4 +1,4 @@
-"use strict";
+     "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -229,7 +229,7 @@ const getAllProductsRatings = async () => {
 
     productMap[product.id] = {
       ...product,
-      averageRating: averageRating ? parseFloat(averageRating.toFixed(1)) : null, // rounded to 1 decimal
+      rating: averageRating ? parseFloat(averageRating.toFixed(1)) : null, // rounded to 1 decimal
     };
   }
 
