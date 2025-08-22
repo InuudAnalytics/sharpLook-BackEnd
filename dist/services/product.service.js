@@ -55,58 +55,64 @@ const getVendorProducts = async (vendorId) => {
     });
 };
 exports.getVendorProducts = getVendorProducts;
+
 const getAllProducts = async () => {
-    return await prisma_1.default.product.findMany({
+  return await prisma.product.findMany({
+    where: {
+      approvalStatus: ApprovalStatus.APPROVED,
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      reviews: {
         where: {
-            approvalStatus: client_1.ApprovalStatus.APPROVED,
+          type: 'PRODUCT', 
         },
-        orderBy: { createdAt: "desc" },
-        include: {
-               reviews: {
-        include: {
+        select: {
+          rating: true,
           client: {
-            select:{
+            select: {
               firstName: true,
               lastName: true,
-              avatar: true
-            }
-          }
-        }
-      },
-            vendor: {
-                include: {
-                    vendorOnboarding: true,
-                    vendorAvailability: true,
-                    vendorServices: true,
-                    vendorReviews: {
-                        include: {
-                            client: {
-                                select: {
-                                    firstName: true,
-                                    lastName: true,
-                                    avatar: true,
-                                },
-                            },
-                        },
-                        orderBy: {
-                            createdAt: "desc",
-                        },
-                    },
-                    wallet: true,
-                    products: true,
-                    cartItems: true,
-                    wishlistItems: true,
-                    orders: true,
-                    referralsMade: true,
-                    referralsGotten: true,
-                    notifications: true,
-                    sentMessages: true,
-                    receivedMessages: true,
-                },
+              avatar: true,
             },
+          },
         },
-    });
+      },
+      vendor: {
+        include: {
+          vendorOnboarding: true,
+          vendorAvailability: true,
+          vendorServices: true,
+          vendorReviews: {
+            include: {
+              client: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          wallet: true,
+          products: true,
+          cartItems: true,
+          wishlistItems: true,
+          orders: true,
+          referralsMade: true,
+          referralsGotten: true,
+          notifications: true,
+          sentMessages: true,
+          receivedMessages: true,
+        },
+      },
+    },
+  });
 };
+
 exports.getAllProducts = getAllProducts;
 const getTopSellingProducts = async (limit = 10) => {
     return await prisma_1.default.product.findMany({
