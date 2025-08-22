@@ -12,6 +12,7 @@ const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage()
 router.post("/vendor/addProducts", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), upload.single("picture"), product_controller_1.addProduct);
 router.get("/getVendorProducts", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), product_controller_1.fetchVendorProducts);
 router.get("/getAllProducts", product_controller_1.fetchAllProducts);
+router.get("/getAllProductsRatings", product_controller_1.getAllProductsRatings);
 router.put("/edit/:productId", auth_middleware_1.verifyToken, upload.single("picture"), (0, auth_middleware_1.requireRole)(["VENDOR"]), product_controller_1.editProduct);
 router.delete("/delete/:productId", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), product_controller_1.removeProduct);
 exports.default = router;
