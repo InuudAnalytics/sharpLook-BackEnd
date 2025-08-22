@@ -57,7 +57,7 @@ const getVendorProducts = async (vendorId) => {
 exports.getVendorProducts = getVendorProducts;
 
 const getAllProducts = async () => {
-  return await prisma.product.findMany({
+  return await prisma_1.default.product.findMany({
     where: {
       approvalStatus: ApprovalStatus.APPROVED,
     },
@@ -188,7 +188,7 @@ const deleteProduct = async (productId) => {
 exports.deleteProduct = deleteProduct;
 
 const getAllProductsRatings = async () => {
-  return await prisma.product.findMany({
+  return await prisma_1.default.product.findMany({
     where: {
       approvalStatus: ApprovalStatus.APPROVED,
     },
