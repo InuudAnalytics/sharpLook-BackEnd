@@ -188,15 +188,23 @@ const deleteProduct = async (productId) => {
 exports.deleteProduct = deleteProduct;
 
 const getAllProductsRatings = async () => {
-  return await prisma_1.default.product.findMany({
+  const products = await prisma_1.default.product.findMany({
     where: {
-       approvalStatus: client_1.ApprovalStatus.APPROVED,
+      approvalStatus: client_1.ApprovalStatus.APPROVED,
     },
-    orderBy: { createdAt: "desc" },
-    include: {
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      productName: true,
+      description: true,
+      price: true,
+      picture: true,
+      createdAt: true,
       reviews: {
         where: {
-          type: 'PRODUCT', // filter to only include product reviews
+          type: 'PRODUCT',
         },
         select: {
           rating: true,
@@ -209,16 +217,27 @@ const getAllProductsRatings = async () => {
           },
         },
       },
-      vendor: {
-        include: {
-          vendorOnboarding: true,
-          products: true,        
-          
-        },
-      },
     },
   });
+
+  // Add average rating to each product
+  const productMap = {};
+  for (const product of products) {
+    const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+    const reviewCount = product.reviews.length;
+    const averageRating = reviewCount > 0 ? totalRatings / reviewCount : null;
+
+    productMap[product.id] = {
+      ...product,
+      averageRating: averageRating ? parseFloat(averageRating.toFixed(1)) : null, // rounded to 1 decimal
+    };
+  }
+
+  return productMap;
 };
+
+exports.getAllProductsRatings = getAllProductsRatings;
+
 
 exports.getAllProductsRatings = getAllProductsRatings;
 
