@@ -28,4 +28,6 @@ router.get("/earnings-graph", auth_middleware_1.verifyToken, (0, auth_middleware
 router.post('/mark-vendor-paid', auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_1.markVendorAsPaidController);
 router.get('/getMySub', auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_1.getVendorSubscriptionController);
 router.put("/profile/edit", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), upload_middleware_1.uploadMultiple, vendor_controller_2.editVendorProfile);
+router.delete("/deleteMyVendorAcct", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_2.deleteVendorAccountController);
+
 exports.default = router;
