@@ -134,18 +134,18 @@ const updateUserAvatar = async (userId, fileBuffer) => {
 };
 exports.updateUserAvatar = updateUserAvatar;
 const deleteUserAccount = async (userId) => {
-    // Ensure the user exists
     const existingUser = await prisma_1.default.user.findUnique({ where: { id: userId } });
     if (!existingUser) {
         throw new Error("User not found.");
     }
-    // Delete related entities if required (cascading logic can vary based on your needs)
-    // Example: Delete VendorOnboarding if exists
-    await prisma_1.default.vendorOnboarding.deleteMany({
-        where: { userId },
-    });
-    // You may want to soft delete instead (e.g., mark `isBanned = true` or `deletedAt = Date`)
-    await prisma_1.default.user.delete({ where: { id: userId } });
+    await prisma_1.default.$transaction([
+        prisma_1.default.vendorOnboarding.deleteMany({ where: { userId } }),
+        prisma_1.default.order.deleteMany({ where: { userId } }),
+        prisma_1.default.booking.delete({ where: { id: userId } }),
+        prisma_1.default.review.delete({ where: { id: userId } }),
+        prisma_1.default.serviceOfferBooking.delete({ where: { id: userId } }),
+        prisma_1.default.user.delete({ where: { id: userId } }),
+    ]);
     return { success: true, message: "Account deleted successfully." };
 };
 exports.deleteUserAccount = deleteUserAccount;
