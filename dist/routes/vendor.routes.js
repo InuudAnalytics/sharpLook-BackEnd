@@ -22,7 +22,7 @@ router.get("/getCategories", admin_controller_1.fetchServiceCategories);
 router.get("/filter-by-service", vendor_controller_2.filterVendorsByService);
 router.post("/setVendorAvailability", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_2.updateAvailability);
 router.get("/getVendorAvailability", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_2.fetchAvailability);
-router.put("/update-service-radius", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_2.updateServiceRadius);
+router.put("/update-service-radius", auth_middleware_1.verifyToken, vendor_controller_2.updateServiceRadius);
 router.get("/analytics/:vendorId", auth_middleware_1.verifyToken, vendorAnalytics_controller_1.fetchVendorAnalytics);
 router.get("/earnings-graph", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendorAnalytics_controller_1.fetchVendorEarningsGraph);
 router.post('/mark-vendor-paid', auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), vendor_controller_1.markVendorAsPaidController);
