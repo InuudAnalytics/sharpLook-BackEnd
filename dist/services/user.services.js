@@ -138,16 +138,16 @@ const deleteUserAccount = async (userId) => {
     if (!existingUser) {
         throw new Error("User not found.");
     }
-    await prisma_1.default.$transaction([
-        prisma_1.default.vendorOnboarding.deleteMany({ where: { userId } }),
-        prisma_1.default.booking.deleteMany({ where: { id: userId } }),
-        prisma_1.default.review.deleteMany({ where: { id: userId } }),
-        prisma_1.default.vendorOrder.deleteMany({ where: { id: userId } }),
-        prisma_1.default.order.deleteMany({ where: { id: userId } }),
-        prisma_1.default.cartItem.deleteMany({ where: { id: userId } }),
-        prisma_1.default.serviceOfferBooking.deleteMany({ where: { id: userId } }),
-        prisma_1.default.user.delete({ where: { id: userId } }),
-    ]);
+ await prisma_1.default.$transaction([
+  prisma_1.default.vendorOnboarding.deleteMany({ where: { userId } }),
+  prisma_1.default.booking.deleteMany({ where: { userId } }),
+  prisma_1.default.review.deleteMany({ where: { userId } }),
+  prisma_1.default.vendorOrder.deleteMany({ where: { userId } }),
+  prisma_1.default.order.deleteMany({ where: { userId } }),
+  prisma_1.default.cartItem.deleteMany({ where: { userId } }),
+  prisma_1.default.serviceOfferBooking.deleteMany({ where: { userId } }),
+  prisma_1.default.user.delete({ where: { id: userId } }),
+]);
     return { success: true, message: "Account deleted successfully." };
 };
 exports.deleteUserAccount = deleteUserAccount;
