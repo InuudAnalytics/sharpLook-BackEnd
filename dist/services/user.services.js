@@ -150,5 +150,5 @@ await prisma_1.default.$transaction([
 ]);
 
 return { success: true, message: "Account deleted successfully." };
-
+    }
 exports.deleteUserAccount = deleteUserAccount;
