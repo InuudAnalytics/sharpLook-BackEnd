@@ -140,7 +140,7 @@ const deleteUserAccount = async (userId) => {
     }
 await prisma_1.default.$transaction([
   prisma_1.default.vendorOnboarding.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.booking.deleteMany({ where: { user: { id: userId } } }),
+  prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
   prisma_1.default.review.deleteMany({ where: { user: { id: userId } } }),
   prisma_1.default.vendorOrder.deleteMany({ where: { user: { id: userId } } }),
   prisma_1.default.order.deleteMany({ where: { user: { id: userId } } }),
