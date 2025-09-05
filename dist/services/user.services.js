@@ -139,7 +139,7 @@ const deleteUserAccount = async (userId) => {
         throw new Error("User not found.");
     }
  await prisma_1.default.$transaction([
-  prisma_1.default.vendorOnboarding.deleteMany({ where: { userId } }),
+  // prisma_1.default.vendorOnboarding.deleteMany(where: { user: { id: userId } }),
   prisma_1.default.booking.deleteMany({ where: { userId } }),
   prisma_1.default.review.deleteMany({ where: { userId } }),
   prisma_1.default.vendorOrder.deleteMany({ where: { userId } }),
