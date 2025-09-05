@@ -127,7 +127,7 @@ const handleDeleteAccount = async (req, res) => {
     }
     catch (error) {
         console.error("Delete account error:", error.message);
-        return res.status(500).json({ "You have an Order in Your Profile" });
+        return res.status(500).json({ error: error.message || "Internal Server Error" });
     }
 };
 exports.handleDeleteAccount = handleDeleteAccount;
