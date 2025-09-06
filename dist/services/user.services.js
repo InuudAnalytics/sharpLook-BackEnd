@@ -139,27 +139,37 @@ const deleteUserAccount = async (userId) => {
     throw new Error("User not found.");
   }
 
-  // Step 1: Find all order IDs for this user
+  // Step 1: Get all order IDs tied to the user
   const userOrders = await prisma_1.default.order.findMany({
-    where: { userId: userId },
+    where: { userId },
     select: { id: true }
   });
 
   const orderIds = userOrders.map(order => order.id);
 
-  // Step 2: Run deletion transaction in correct order
+  // Step 2: Delete all related data in correct order
   await prisma_1.default.$transaction([
+    // Delete OrderItems first
+    prisma_1.default.orderItem.deleteMany({
+      where: { orderId: { in: orderIds } }
+    }),
+
+    // Then VendorOrders
     prisma_1.default.vendorOrder.deleteMany({
       where: { orderId: { in: orderIds } }
     }),
 
+    // Then Orders
+    prisma_1.default.order.deleteMany({
+      where: { id: { in: orderIds } }
+    }),
+
+    // Then other models
     prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
 
     prisma_1.default.review.deleteMany({ where: { clientId: userId } }),
 
-    prisma_1.default.order.deleteMany({ where: { id: { in: orderIds } } }),
-
-    prisma_1.default.cartItem.deleteMany({ where: { userId: userId } }),
+    prisma_1.default.cartItem.deleteMany({ where: { userId } }),
 
     prisma_1.default.serviceOfferBooking.deleteMany({
       where: {
@@ -177,3 +187,4 @@ const deleteUserAccount = async (userId) => {
 };
 
 exports.deleteUserAccount = deleteUserAccount;
+
