@@ -147,9 +147,9 @@ const deleteUserAccount = async (userId) => {
 
   const orderIds = userOrders.map(order => order.id);
 
-  // Step 2: Delete all related data in proper order
+  // Step 2: Run cleanup in a transaction
   await prisma_1.default.$transaction([
-    // Delete OrderItems → VendorOrders → Orders
+    // OrderItem and VendorOrder must go first
     prisma_1.default.orderItem.deleteMany({
       where: { orderId: { in: orderIds } }
     }),
@@ -162,22 +162,11 @@ const deleteUserAccount = async (userId) => {
       where: { id: { in: orderIds } }
     }),
 
-    // Delete bookings
-    prisma_1.default.booking.deleteMany({
-      where: { clientId: userId }
-    }),
-
-    // Delete reviews
-    prisma_1.default.review.deleteMany({
-      where: { clientId: userId }
-    }),
-
-    // Delete cart items
-    prisma_1.default.cartItem.deleteMany({
-      where: { userId }
-    }),
-
-    // Delete service offer bookings
+    // Other user-linked records
+    prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
+    prisma_1.default.review.deleteMany({ where: { clientId: userId } }),
+    prisma_1.default.cartItem.deleteMany({ where: { userId } }),
+    
     prisma_1.default.serviceOfferBooking.deleteMany({
       where: {
         OR: [
@@ -187,12 +176,11 @@ const deleteUserAccount = async (userId) => {
       }
     }),
 
-    // ✅ Delete notifications
     prisma_1.default.notification.deleteMany({
       where: { userId }
     }),
 
-    // ✅ Delete messages where user is sender or receiver
+    // ✅ THIS is the missing piece: delete messages
     prisma_1.default.message.deleteMany({
       where: {
         OR: [
@@ -202,7 +190,7 @@ const deleteUserAccount = async (userId) => {
       }
     }),
 
-    // ✅ Finally, delete user
+    // ✅ Finally: delete the user
     prisma_1.default.user.delete({
       where: { id: userId }
     })
@@ -212,4 +200,5 @@ const deleteUserAccount = async (userId) => {
 };
 
 exports.deleteUserAccount = deleteUserAccount;
+
 
