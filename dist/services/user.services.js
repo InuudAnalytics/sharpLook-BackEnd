@@ -139,36 +139,41 @@ const deleteUserAccount = async (userId) => {
     throw new Error("User not found.");
   }
 
+  // Step 1: Find all order IDs for this user
+  const userOrders = await prisma_1.default.order.findMany({
+    where: { userId: userId },
+    select: { id: true }
+  });
+
+  const orderIds = userOrders.map(order => order.id);
+
+  // Step 2: Run deletion transaction in correct order
   await prisma_1.default.$transaction([
+    prisma_1.default.vendorOrder.deleteMany({
+      where: { orderId: { in: orderIds } }
+    }),
+
     prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
 
-    prisma_1.default.review.deleteMany({
-      where: { clientId: userId }
+    prisma_1.default.review.deleteMany({ where: { clientId: userId } }),
+
+    prisma_1.default.order.deleteMany({ where: { id: { in: orderIds } } }),
+
+    prisma_1.default.cartItem.deleteMany({ where: { userId: userId } }),
+
+    prisma_1.default.serviceOfferBooking.deleteMany({
+      where: {
+        OR: [
+          { clientId: userId },
+          { vendorId: userId }
+        ]
+      }
     }),
 
-    // prisma_1.default.vendorOrder.deleteMany({
-    //   where: { vendorId: userId }
-    // }),
-
-    prisma_1.default.order.deleteMany({
-      where: { userId: userId }
-    }),
-
-    prisma_1.default.cartItem.deleteMany({
-      where: { userId: userId }
-    }),
-
-  prisma_1.default.serviceOfferBooking.deleteMany({
-  where: { clientId: userId }
-}),
-
-    prisma_1.default.user.delete({
-      where: { id: userId }
-    })
+    prisma_1.default.user.delete({ where: { id: userId } })
   ]);
 
   return { success: true, message: "Account deleted successfully." };
 };
 
 exports.deleteUserAccount = deleteUserAccount;
-
