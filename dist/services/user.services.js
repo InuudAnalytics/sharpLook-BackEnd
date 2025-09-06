@@ -141,11 +141,17 @@ const deleteUserAccount = async (userId) => {
 await prisma_1.default.$transaction([
   // prisma_1.default.vendorOnboarding.deleteMany({ where: { user: { id: userId } } }),
   prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
-  prisma_1.default.review.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.vendorOrder.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.order.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.cartItem.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.serviceOfferBooking.deleteMany({ where: { user: { id: userId } } }),
+ prisma_1.review.deleteMany({
+  where: { clientId: userId }
+});
+
+  // prisma_1.default.vendorOrder.deleteMany({ where: { user: { id: userId } } }),
+ prisma_1.order.deleteMany({
+  where: { userId: userId }
+});
+
+  prisma_1.default.cartItem.deleteMany({ where: { userId: userId } } }),
+    prisma_1.serviceOfferBooking.deleteMany({ where: { userId: userId } }), // Same assumption
   prisma_1.default.user.delete({ where: { id: userId } }),
 ]);
 
