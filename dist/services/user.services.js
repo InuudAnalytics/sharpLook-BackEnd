@@ -192,7 +192,17 @@ const deleteUserAccount = async (userId) => {
       where: { userId }
     }),
 
-    // Finally, delete user
+    // ✅ Delete messages where user is sender or receiver
+    prisma_1.default.message.deleteMany({
+      where: {
+        OR: [
+          { senderId: userId },
+          { receiverId: userId }
+        ]
+      }
+    }),
+
+    // ✅ Finally, delete user
     prisma_1.default.user.delete({
       where: { id: userId }
     })
