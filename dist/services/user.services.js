@@ -160,7 +160,7 @@ const deleteUserAccount = async (userId) => {
 
   prisma_1.default.serviceOfferBooking.deleteMany({
   where: { clientId: userId }
-});
+}),
 
     prisma_1.default.user.delete({
       where: { id: userId }
