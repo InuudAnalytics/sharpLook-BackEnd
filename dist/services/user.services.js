@@ -134,27 +134,41 @@ const updateUserAvatar = async (userId, fileBuffer) => {
 };
 exports.updateUserAvatar = updateUserAvatar;
 const deleteUserAccount = async (userId) => {
-    const existingUser = await prisma_1.default.user.findUnique({ where: { id: userId } });
-    if (!existingUser) {
-        throw new Error("User not found.");
-    }
-await prisma_1.default.$transaction([
-  // prisma_1.default.vendorOnboarding.deleteMany({ where: { user: { id: userId } } }),
-  prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
- prisma_1.review.deleteMany({
-  where: { clientId: userId }
-});
+  const existingUser = await prisma_1.default.user.findUnique({ where: { id: userId } });
+  if (!existingUser) {
+    throw new Error("User not found.");
+  }
 
-  // prisma_1.default.vendorOrder.deleteMany({ where: { user: { id: userId } } }),
- prisma_1.order.deleteMany({
-  where: { userId: userId }
-});
+  await prisma_1.default.$transaction([
+    prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
 
-  prisma_1.default.cartItem.deleteMany({ where: { userId: userId } } }),
-    prisma_1.serviceOfferBooking.deleteMany({ where: { userId: userId } }), // Same assumption
-  prisma_1.default.user.delete({ where: { id: userId } }),
-]);
+    prisma_1.default.review.deleteMany({
+      where: { clientId: userId }
+    }),
 
-return { success: true, message: "Account deleted successfully." };
-    }
+    // prisma_1.default.vendorOrder.deleteMany({
+    //   where: { vendorId: userId }
+    // }),
+
+    prisma_1.default.order.deleteMany({
+      where: { userId: userId }
+    }),
+
+    prisma_1.default.cartItem.deleteMany({
+      where: { userId: userId }
+    }),
+
+    prisma_1.default.serviceOfferBooking.deleteMany({
+      where: { userId: userId }
+    }),
+
+    prisma_1.default.user.delete({
+      where: { id: userId }
+    })
+  ]);
+
+  return { success: true, message: "Account deleted successfully." };
+};
+
 exports.deleteUserAccount = deleteUserAccount;
+
