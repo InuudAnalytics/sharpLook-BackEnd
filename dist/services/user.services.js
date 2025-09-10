@@ -179,6 +179,14 @@ const deleteUserAccount = async (userId) => {
     prisma_1.default.notification.deleteMany({
       where: { userId }
     }),
+     prisma_1.default.referral.deleteMany({
+    where: {
+      OR: [
+        { referredById: userId },
+        { referredUserId: userId }
+      ]
+    }
+  }),
 
     // ✅ THIS is the missing piece: delete messages
     prisma_1.default.message.deleteMany({
