@@ -1,4 +1,7 @@
 import admin from 'firebase-admin';
+import dotenv from 'dotenv';
+
+dotenv.config()
 
 const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
@@ -19,3 +22,5 @@ if (!admin.apps.length) {
 }
 
 export default admin;
+
+
