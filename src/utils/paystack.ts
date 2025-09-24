@@ -1,6 +1,9 @@
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 
+// import dotenv from 'dotenv';
+
+// dotenv.config()
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
