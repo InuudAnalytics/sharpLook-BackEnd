@@ -106,6 +106,79 @@ export const getAllProducts = async () => {
   });
 };
 
+// new getAllProductsRatingsService
+export const getAllProductsRatingsService = async () => {
+  const products = await prisma.product.findMany({
+    where: {
+approvalStatus: ApprovalStatus.APPROVED,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      reviews: {
+        where: {
+          type: "PRODUCT",
+        },
+        select: {
+          rating: true,
+          client: {
+            select: {
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+      },
+      vendor: {
+        include: {
+          vendorOnboarding: true,
+          vendorAvailability: true,
+          vendorServices: true,
+          vendorReviews: {
+            include: {
+              client: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          products: true,
+          cartItems: true,
+          wishlistItems: true,
+          orders: true,
+        },
+      },
+    },
+  });
+
+  // Compute average rating and append to each product
+  const enrichedProducts = products.map((product) => {
+    const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+    const reviewCount = product.reviews.length;
+    const rating = reviewCount > 0 ? parseFloat((totalRatings / reviewCount).toFixed(1)) : null;
+
+    return {
+      ...product,
+      rating, 
+    };
+  });
+
+
+  return {
+    success: true,
+    message: "All products fetched successfully",
+    data: enrichedProducts,
+  };
+};
+
 
 export const getTopSellingProducts = async (limit = 10) => {
   return await prisma.product.findMany({

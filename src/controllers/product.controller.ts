@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { createProduct } from "../services/product.service"
+import { createProduct, getAllProductsRatingsService } from "../services/product.service"
 import uploadToCloudinary from "../utils/cloudinary"
 import { getVendorProducts, getAllProducts, getTopSellingProducts, deleteProduct, updateProduct  } from "../services/product.service"
 import { Prisma } from "@prisma/client";
@@ -87,6 +87,28 @@ export const fetchAllProducts = async (_req: Request, res: Response) => {
       data: products,
     });
   } catch (err: any) {
+    console.error("❌ Error fetching all products:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch all products",
+      error: err instanceof Prisma.PrismaClientKnownRequestError ? err.meta : err.message,
+    });
+  }
+};
+
+
+export const getAllProductsRatings = async (_req: Request, res: Response) => {
+  
+    try {
+        const productsRating = await getAllProductsRatingsService();
+        return res.status(200).json({
+            success: true,
+            message: "All products Ratings fetched successfully",
+            data: productsRating,
+        });
+    }
+    catch (err: any) {
     console.error("❌ Error fetching all products:", err);
 
     return res.status(500).json({
