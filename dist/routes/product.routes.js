@@ -15,4 +15,5 @@ router.get("/getAllProducts", product_controller_1.fetchAllProducts);
 router.get("/getAllProductsRatings", product_controller_1.getAllProductsRatings);
 router.put("/edit/:productId", auth_middleware_1.verifyToken, upload.single("picture"), (0, auth_middleware_1.requireRole)(["VENDOR"]), product_controller_1.editProduct);
 router.delete("/delete/:productId", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["VENDOR"]), product_controller_1.removeProduct);
+// getAllProductsRatings
 exports.default = router;

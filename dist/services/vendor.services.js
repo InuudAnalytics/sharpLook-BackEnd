@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteVendorAccount = exports.updateVendorProfile = exports.getVendorsByService = exports.getAllVendorServices = exports.findNearbyVendors = exports.updateServiceRadiusAndLocation = exports.getVendorAvailability = exports.setVendorAvailability = exports.getVendorSpecialties = exports.updateVendorSpecialties = exports.getPortfolioImages = exports.addPortfolioImages = void 0;
+exports.updateVendorProfile = exports.getVendorsByService = exports.getAllVendorServices = exports.findNearbyVendors = exports.updateServiceRadiusAndLocation = exports.getVendorAvailability = exports.setVendorAvailability = exports.getVendorSpecialties = exports.updateVendorSpecialties = exports.getPortfolioImages = exports.addPortfolioImages = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const distance_1 = require("../utils/distance");
 const client_1 = require("@prisma/client");
@@ -129,34 +129,3 @@ const updateVendorProfile = async (vendorId, data) => {
     });
 };
 exports.updateVendorProfile = updateVendorProfile;
-const deleteVendorAccount = async (userId) => {
-    const existingUser = await prisma_1.default.user.findUnique({
-        where: { id: userId },
-        include: {
-            vendorOnboarding: true,
-            vendorAvailability: true,
-            vendorServices: true,
-            vendorReviews: true,
-            promotions: true,
-            wallet: true,
-            products: true,
-        },
-    });
-    if (!existingUser || existingUser.role !== 'VENDOR') {
-        throw new Error("Vendor not found or invalid user type.");
-    }
-    // Delete all related records
-    await prisma_1.default.vendorAvailability.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.vendorService.deleteMany({ where: { userId } });
-    await prisma_1.default.review.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.vendorOrder.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.booking.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.promotion.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.product.deleteMany({ where: { vendorId: userId } });
-    await prisma_1.default.vendorOnboarding.deleteMany({ where: { userId } });
-    // Finally delete the user record
-    await prisma_1.default.user.delete({ where: { id: userId } });
-    await prisma_1.default.wallet.deleteMany({ where: { userId } });
-    return { success: true, message: "Vendor account deleted successfully." };
-};
-exports.deleteVendorAccount = deleteVendorAccount;

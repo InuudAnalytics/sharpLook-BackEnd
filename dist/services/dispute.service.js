@@ -20,9 +20,21 @@ const getAllDisputes = async () => {
     return await prisma_1.default.dispute.findMany({
         include: {
             raisedBy: {
-                select: { firstName: true, lastName: true, role: true },
+                select: { firstName: true, lastName: true, phone: true, role: true },
             },
-            booking: true,
+            // booking: true,
+            booking: {
+                include: {
+                    vendor: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            phone: true,
+                            role: true,
+                        }
+                    }
+                }
+            }
         },
         orderBy: { createdAt: "desc" },
     });
