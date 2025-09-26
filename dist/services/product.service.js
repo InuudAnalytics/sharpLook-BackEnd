@@ -1,9 +1,9 @@
-     "use strict";
+"use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.updateProduct = exports.getTopSellingProducts = exports.getAllProducts = exports.getVendorProducts = exports.createProduct = void 0;
+exports.deleteProduct = exports.updateProduct = exports.getTopSellingProducts = exports.getAllProductsRatingsService = exports.getAllProducts = exports.getVendorProducts = exports.createProduct = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const client_1 = require("@prisma/client");
 const createProduct = async (vendorId, productName, price, qtyAvailable, description, picture) => {
@@ -55,65 +55,117 @@ const getVendorProducts = async (vendorId) => {
     });
 };
 exports.getVendorProducts = getVendorProducts;
-
 const getAllProducts = async () => {
-  return await prisma_1.default.product.findMany({
-    where: {
-       approvalStatus: client_1.ApprovalStatus.APPROVED,
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      reviews: {
+    return await prisma_1.default.product.findMany({
         where: {
-          type: 'PRODUCT', 
+            approvalStatus: client_1.ApprovalStatus.APPROVED,
         },
-        select: {
-          rating: true,
-          client: {
-            select: {
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-        },
-      },
-      vendor: {
+        orderBy: { createdAt: "desc" },
         include: {
-          vendorOnboarding: true,
-          vendorAvailability: true,
-          vendorServices: true,
-          vendorReviews: {
-            include: {
-              client: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  avatar: true,
+            vendor: {
+                include: {
+                    vendorOnboarding: true,
+                    vendorAvailability: true,
+                    vendorServices: true,
+                    vendorReviews: {
+                        include: {
+                            client: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatar: true,
+                                },
+                            },
+                        },
+                        orderBy: {
+                            createdAt: "desc",
+                        },
+                    },
+                    wallet: true,
+                    products: true,
+                    cartItems: true,
+                    wishlistItems: true,
+                    orders: true,
+                    referralsMade: true,
+                    referralsGotten: true,
+                    notifications: true,
+                    sentMessages: true,
+                    receivedMessages: true,
                 },
-              },
             },
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-          wallet: true,
-          products: true,
-          cartItems: true,
-          wishlistItems: true,
-          orders: true,
-          referralsMade: true,
-          referralsGotten: true,
-          notifications: true,
-          sentMessages: true,
-          receivedMessages: true,
         },
-      },
-    },
-  });
+    });
 };
-
 exports.getAllProducts = getAllProducts;
+// new getAllProductsRatingsService
+const getAllProductsRatingsService = async () => {
+    const products = await prisma_1.default.product.findMany({
+        where: {
+            approvalStatus: client_1.ApprovalStatus.APPROVED,
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+        include: {
+            reviews: {
+                where: {
+                    type: "PRODUCT",
+                },
+                select: {
+                    rating: true,
+                    client: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            avatar: true,
+                        },
+                    },
+                },
+            },
+            vendor: {
+                include: {
+                    vendorOnboarding: true,
+                    vendorAvailability: true,
+                    vendorServices: true,
+                    vendorReviews: {
+                        include: {
+                            client: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatar: true,
+                                },
+                            },
+                        },
+                        orderBy: {
+                            createdAt: "desc",
+                        },
+                    },
+                    products: true,
+                    cartItems: true,
+                    wishlistItems: true,
+                    orders: true,
+                },
+            },
+        },
+    });
+    // Compute average rating and append to each product
+    const enrichedProducts = products.map((product) => {
+        const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+        const reviewCount = product.reviews.length;
+        const rating = reviewCount > 0 ? parseFloat((totalRatings / reviewCount).toFixed(1)) : null;
+        return {
+            ...product,
+            rating,
+        };
+    });
+    return {
+        success: true,
+        message: "All products fetched successfully",
+        data: enrichedProducts,
+    };
+};
+exports.getAllProductsRatingsService = getAllProductsRatingsService;
 const getTopSellingProducts = async (limit = 10) => {
     return await prisma_1.default.product.findMany({
         where: {
@@ -186,83 +238,3 @@ const deleteProduct = async (productId) => {
     });
 };
 exports.deleteProduct = deleteProduct;
-
-const getAllProductsRatings = async () => {
-  const products = await prisma_1.default.product.findMany({
-    where: {
-approvalStatus: client_1.ApprovalStatus.APPROVED,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      reviews: {
-        where: {
-          type: "PRODUCT",
-        },
-        select: {
-          rating: true,
-          client: {
-            select: {
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-        },
-      },
-      vendor: {
-        include: {
-          vendorOnboarding: true,
-          vendorAvailability: true,
-          vendorServices: true,
-          vendorReviews: {
-            include: {
-              client: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  avatar: true,
-                },
-              },
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-          products: true,
-          cartItems: true,
-          wishlistItems: true,
-          orders: true,
-        },
-      },
-    },
-  });
-
-  // Compute average rating and append to each product
-  const enrichedProducts = products.map((product) => {
-    const totalRatings = product.reviews.reduce((sum, review) => sum + review.rating, 0);
-    const reviewCount = product.reviews.length;
-    const rating = reviewCount > 0 ? parseFloat((totalRatings / reviewCount).toFixed(1)) : null;
-
-    return {
-      ...product,
-      rating, 
-    };
-  });
-
-
-  return {
-    success: true,
-    message: "All products fetched successfully",
-    data: enrichedProducts,
-  };
-};
-
-
-
-exports.getAllProductsRatings = getAllProductsRatings;
-
-
-
-

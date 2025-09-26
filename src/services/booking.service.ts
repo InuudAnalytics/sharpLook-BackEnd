@@ -231,7 +231,8 @@ const finalizeBookingPayment = async (
   const vendorWallet = await getUserWallet(booking.vendorId);
   if (!vendorWallet) throw new Error("Vendor wallet not found");
 
-await creditWallet(prisma, vendorWallet.id, booking.price, "Booking Payment Received", reference);
+await creditWallet(prisma, vendorWallet.id, booking.totalAmount, "Booking Payment Received", reference);
+
 // booking.totalAmount
 
 

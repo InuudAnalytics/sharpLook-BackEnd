@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createVirtual = exports.createCustomer = exports.sendTransfer = exports.createTransferRecipient = exports.getBanks = exports.generateReference = exports.verifyPayment = exports.initializePayment = void 0;
 const axios_1 = __importDefault(require("axios"));
 const uuid_1 = require("uuid");
+// import dotenv from 'dotenv';
+// dotenv.config()
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const initializePayment = async (email, amount) => {
     console.log(typeof amount);

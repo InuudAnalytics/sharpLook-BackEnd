@@ -134,79 +134,18 @@ const updateUserAvatar = async (userId, fileBuffer) => {
 };
 exports.updateUserAvatar = updateUserAvatar;
 const deleteUserAccount = async (userId) => {
-  const existingUser = await prisma_1.default.user.findUnique({ where: { id: userId } });
-  if (!existingUser) {
-    throw new Error("User not found.");
-  }
-
-  // Step 1: Get all order IDs tied to the user
-  const userOrders = await prisma_1.default.order.findMany({
-    where: { userId },
-    select: { id: true }
-  });
-
-  const orderIds = userOrders.map(order => order.id);
-
-  // Step 2: Run cleanup in a transaction
-  await prisma_1.default.$transaction([
-    // OrderItem and VendorOrder must go first
-    prisma_1.default.orderItem.deleteMany({
-      where: { orderId: { in: orderIds } }
-    }),
-
-    prisma_1.default.vendorOrder.deleteMany({
-      where: { orderId: { in: orderIds } }
-    }),
-
-    prisma_1.default.order.deleteMany({
-      where: { id: { in: orderIds } }
-    }),
-
-    // Other user-linked records
-    prisma_1.default.booking.deleteMany({ where: { clientId: userId } }),
-    prisma_1.default.review.deleteMany({ where: { clientId: userId } }),
-    prisma_1.default.cartItem.deleteMany({ where: { userId } }),
-    
-    prisma_1.default.serviceOfferBooking.deleteMany({
-      where: {
-        OR: [
-          { clientId: userId },
-          { vendorId: userId }
-        ]
-      }
-    }),
-
-    prisma_1.default.notification.deleteMany({
-      where: { userId }
-    }),
-     prisma_1.default.referral.deleteMany({
-    where: {
-      OR: [
-        { referredById: userId },
-        { referredUserId: userId }
-      ]
+    // Ensure the user exists
+    const existingUser = await prisma_1.default.user.findUnique({ where: { id: userId } });
+    if (!existingUser) {
+        throw new Error("User not found.");
     }
-  }),
-
-    // ✅ THIS is the missing piece: delete messages
-    prisma_1.default.message.deleteMany({
-      where: {
-        OR: [
-          { senderId: userId },
-          { receiverId: userId }
-        ]
-      }
-    }),
-
-    // ✅ Finally: delete the user
-    prisma_1.default.user.delete({
-      where: { id: userId }
-    })
-  ]);
-
-  return { success: true, message: "Account deleted successfully." };
+    // Delete related entities if required (cascading logic can vary based on your needs)
+    // Example: Delete VendorOnboarding if exists
+    await prisma_1.default.vendorOnboarding.deleteMany({
+        where: { userId },
+    });
+    // You may want to soft delete instead (e.g., mark `isBanned = true` or `deletedAt = Date`)
+    await prisma_1.default.user.delete({ where: { id: userId } });
+    return { success: true, message: "Account deleted successfully." };
 };
-
 exports.deleteUserAccount = deleteUserAccount;
-
-

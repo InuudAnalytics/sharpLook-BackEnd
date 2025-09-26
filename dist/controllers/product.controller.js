@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeProduct = exports.editProduct = exports.fetchTopSellingProducts = exports.fetchAllProducts = exports.fetchVendorProducts = exports.addProduct = void 0;
+exports.removeProduct = exports.editProduct = exports.fetchTopSellingProducts = exports.getAllProductsRatings = exports.fetchAllProducts = exports.fetchVendorProducts = exports.addProduct = void 0;
 const product_service_1 = require("../services/product.service");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
 const product_service_2 = require("../services/product.service");
@@ -86,6 +86,25 @@ const fetchAllProducts = async (_req, res) => {
     }
 };
 exports.fetchAllProducts = fetchAllProducts;
+const getAllProductsRatings = async (_req, res) => {
+    try {
+        const productsRating = await (0, product_service_1.getAllProductsRatingsService)();
+        return res.status(200).json({
+            success: true,
+            message: "All products Ratings fetched successfully",
+            data: productsRating,
+        });
+    }
+    catch (err) {
+        console.error("❌ Error fetching all products:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch all products",
+            error: err instanceof client_1.Prisma.PrismaClientKnownRequestError ? err.meta : err.message,
+        });
+    }
+};
+exports.getAllProductsRatings = getAllProductsRatings;
 const fetchTopSellingProducts = async (req, res) => {
     const limit = parseInt(req.query.limit, 10);
     if (isNaN(limit) || limit <= 0) {
@@ -204,25 +223,3 @@ const removeProduct = async (req, res) => {
     }
 };
 exports.removeProduct = removeProduct;
-
-
-exports.fetchVendorProducts = fetchVendorProducts;
-const getAllProductsRatings = async (_req, res) => {
-    try {
-        const productsRating = await (0, product_service_2.getAllProductsRatings)();
-        return res.status(200).json({
-            success: true,
-            message: "All products Ratings fetched successfully",
-            data: productsRating,
-        });
-    }
-    catch (err) {
-        console.error("❌ Error fetching all products:", err);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch all products",
-            error: err instanceof client_1.Prisma.PrismaClientKnownRequestError ? err.meta : err.message,
-        });
-    }
-};
-exports.getAllProductsRatings = getAllProductsRatings;

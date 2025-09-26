@@ -23,7 +23,15 @@ export const getAllDisputes = async () => {
       raisedBy: {
         select: { firstName: true, lastName: true, role: true },
       },
-      booking: true,
+      // booking: true, 
+      booking: {
+        include: {
+          vendor: {
+            select: { firstName: true, lastName: true, role: true, phone: true },
+          }
+        }
+      }
+    
     },
     orderBy: { createdAt: "desc" },
   });
