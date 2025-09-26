@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteVendorAccountController = exports.getVendorSubscriptionController = exports.markVendorAsPaidController = exports.editVendorProfile = exports.filterVendorsByService = exports.fetchAllServiceCategories = exports.getNearbyVendors = exports.updateServiceRadius = exports.fetchAvailability = exports.updateAvailability = exports.fetchPortfolioImages = exports.uploadPortfolioImages = exports.completeVendorProfile = void 0;
+exports.getVendorSubscriptionController = exports.markVendorAsPaidController = exports.editVendorProfile = exports.filterVendorsByService = exports.fetchAllServiceCategories = exports.getNearbyVendors = exports.updateServiceRadius = exports.fetchAvailability = exports.updateAvailability = exports.fetchPortfolioImages = exports.uploadPortfolioImages = exports.completeVendorProfile = void 0;
 const vendorOnboarding_service_1 = require("../services/vendorOnboarding.service");
 const vendor_services_1 = require("../services/vendor.services");
 const cloudinary_1 = __importDefault(require("../utils/cloudinary"));
@@ -99,8 +99,6 @@ const updateServiceRadius = async (req, res) => {
         });
     }
     catch (err) {
-            console.log(err.message);
-
         res.status(500).json({ success: false, message: "Failed to update service radius", error: err.message });
     }
 };
@@ -320,26 +318,3 @@ const getVendorSubscriptionController = async (req, res) => {
     }
 };
 exports.getVendorSubscriptionController = getVendorSubscriptionController;
-
-
-const deleteVendorAccountController = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        let response = await (0, vendor_services_1.deleteVendorAccount)(userId);
-        if (response.success) {
-            return res.status(200).json({
-                success: true,
-                message: "Vendor account deleted successfully.",
-            });
-        }
-    }
-    catch (error) {
-        console.error("Error deleting vendor account:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete vendor account.",
-            error: error.message,
-        });
-    }
-};
-exports.deleteVendorAccountController = deleteVendorAccountController;

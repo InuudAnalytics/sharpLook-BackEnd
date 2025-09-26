@@ -162,7 +162,8 @@ const finalizeBookingPayment = async (booking, reference) => {
     const vendorWallet = await (0, wallet_service_1.getUserWallet)(booking.vendorId);
     if (!vendorWallet)
         throw new Error("Vendor wallet not found");
-    await (0, wallet_service_1.creditWallet)(prisma_1.default, vendorWallet.id, booking.totalAmount, "Booking Payment Received", reference);
+    await (0, wallet_service_1.creditWallet)(prisma_1.default, vendorWallet.id, booking.price, "Booking Payment Received", reference);
+    // booking.totalAmount
     return await prisma_1.default.booking.update({
         where: { id: booking.id },
         data: {
