@@ -32,6 +32,11 @@ export const getAllDisputes = async () => {
               lastName: true,
               phone: true,
               role: true,
+              vendorOnboarding: {
+                select:{
+                  businessName: true
+                }
+              }
             }
           }
         }
