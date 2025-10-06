@@ -1,19 +1,56 @@
 import prisma from "../config/prisma"
 import {haversineDistanceKm} from "../utils/distance"
+import { pushNotificationService } from "./pushNotifications.service";
+
+
+// export const createNotification = async (
+//   userId: string,
+//   message: string,
+//   type: string = "BOOKING"
+// ) => {
+//   return await prisma.notification.create({
+//     data: {
+//       userId,
+//       message,
+//       type,
+//     },
+//   })
+// }
 
 export const createNotification = async (
   userId: string,
   message: string,
   type: string = "BOOKING"
 ) => {
-  return await prisma.notification.create({
+  // 1 Save the notification to the database
+  const notification = await prisma.notification.create({
     data: {
       userId,
       message,
       type,
     },
-  })
-}
+  });
+
+  // 2 Get user's FCM token
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { fcmToken: true },
+  });
+
+  // 3 Send Firebase push notification
+  if (user?.fcmToken) {
+    try {
+      await pushNotificationService.sendPushNotification(
+        user.fcmToken,
+        "New Notification",
+        message
+      );
+    } catch (error) {
+      console.error("Error sending push notification:", error);
+    }
+  }
+  return notification;
+};
 
 export const getUserNotifications = async (userId: string) => {
   return await prisma.notification.findMany({

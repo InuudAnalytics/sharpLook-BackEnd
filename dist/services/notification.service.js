@@ -6,14 +6,44 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.notifyNearbyVendors = exports.deleteNotification = exports.getUserNotifications = exports.createNotification = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const distance_1 = require("../utils/distance");
+const pushNotifications_service_1 = require("./pushNotifications.service");
+// export const createNotification = async (
+//   userId: string,
+//   message: string,
+//   type: string = "BOOKING"
+// ) => {
+//   return await prisma.notification.create({
+//     data: {
+//       userId,
+//       message,
+//       type,
+//     },
+//   })
+// }
 const createNotification = async (userId, message, type = "BOOKING") => {
-    return await prisma_1.default.notification.create({
+    // 1 Save the notification to the database
+    const notification = await prisma_1.default.notification.create({
         data: {
             userId,
             message,
             type,
         },
     });
+    // 2 Get user's FCM token
+    const user = await prisma_1.default.user.findUnique({
+        where: { id: userId },
+        select: { fcmToken: true },
+    });
+    // 3 Send Firebase push notification
+    if (user?.fcmToken) {
+        try {
+            await pushNotifications_service_1.pushNotificationService.sendPushNotification(user.fcmToken, "New Notification", message);
+        }
+        catch (error) {
+            console.error("Error sending push notification:", error);
+        }
+    }
+    return notification;
 };
 exports.createNotification = createNotification;
 const getUserNotifications = async (userId) => {

@@ -1,7 +1,26 @@
 import { Request, Response, NextFunction } from "express";
-import { getUserNotifications, deleteNotification } from "../services/notification.service";
+import { getUserNotifications, deleteNotification, createNotification } from "../services/notification.service";
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { success } from "zod";
 
+
+export const sendTestNotification = async (req: Request, res: Response) => {
+  try {
+    const { userId, message, type } = req.body;
+    const notification = await createNotification(userId, message, type);
+
+    return res.status(200).json({
+      success: true,
+      message: "Message sent successfully",
+      data: notification
+    })
+  } catch (error: any) {
+    console.error("Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message})
+  }
+}
 
 export const getNotifications = async (req: Request, res: Response) => {
   try {

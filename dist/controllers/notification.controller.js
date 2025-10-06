@@ -1,8 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteNotificationController = exports.getNotifications = void 0;
+exports.deleteNotificationController = exports.getNotifications = exports.sendTestNotification = void 0;
 const notification_service_1 = require("../services/notification.service");
 const library_1 = require("@prisma/client/runtime/library");
+const sendTestNotification = async (req, res) => {
+    try {
+        const { userId, message, type } = req.body;
+        const notification = await (0, notification_service_1.createNotification)(userId, message, type);
+        return res.status(200).json({
+            success: true,
+            message: "Message sent successfully",
+            data: notification
+        });
+    }
+    catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+exports.sendTestNotification = sendTestNotification;
 const getNotifications = async (req, res) => {
     try {
         const userId = req.user.id;

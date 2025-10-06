@@ -16,7 +16,11 @@
       password         String
       location         String?
       role             Role
+
+      
       powerGiven Boolean? @default(false)
+
+
 
       vendorOnboarding VendorOnboarding?
 

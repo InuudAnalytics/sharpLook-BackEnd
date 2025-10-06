@@ -8,8 +8,9 @@
     "strict": true,
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"],
-    "moduleResolution": "node"    
+    "moduleResolution": "node",
+    "ignoreDeprecations": "5.0"
   },
 
-  "include": ["src"]
+  "include": ["src", "seed.ts"]
 }
