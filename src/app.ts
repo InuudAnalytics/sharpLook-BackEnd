@@ -25,6 +25,8 @@ import createOffersRoutes from "./routes/offer.routes"
 import pushNotificationRoutes from './routes/pushNotification.routes';
 import createMyAcctRoutes from './routes/virtualAcct.routes';
 
+
+import testNotificationRoute from "../src/test"
 // For clients
 
 
@@ -103,7 +105,9 @@ app.use("/api/v1/orders", productOrderRoutes);
 app.use("/api/v1", pushNotificationRoutes);
 app.use("/api/v1", createMyAcctRoutes);
 
+// test
 
+app.use('/api', testNotificationRoute);
 
 app.get("/", (_, res) => res.send("🚀 SharpLook API is running"))
 

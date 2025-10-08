@@ -38,10 +38,12 @@ export const createNotification = async (
   });
 
   // 3 Send Firebase push notification
-  if (user?.fcmToken) {
+  if (user?.fcmToken) {  
     try {
       await pushNotificationService.sendPushNotification(
         user.fcmToken,
+        // "dzdhmdA-RzWLTOoO5PN2FO:APA91bFowOjmQuBQUac4CV31u-VYJSLM4hLdyP9XZo94UNL3VVbvLo9dqeCNvF9qlEKD6-01BAISfsb_nsAACLB2eYtUN1mEh3gkuJv0j80TAdGz2npGrxA",    
+        // "e_JWXm6Jlks7ooWeg8kmSl:APA91bGxcBQ9guBM1hWYwhvyy9yjVokTpsD-fjMaCSbaxb0LryhrCvBrzrdw6oXc9tJxPF5fZEfX8I95zjc3JLnAfierLO-I2orWhtal6Iy5IMc4DMCGI0Y",
         "New Notification",
         message
       );

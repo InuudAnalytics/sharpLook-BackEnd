@@ -1,6 +1,7 @@
 // src/controllers/message.controller.ts
 import { Request, Response } from "express"
 import {
+  saveMessage,
   getMessagesByRoomId,
   markMessagesAsRead,
   toggleMessageLike,
@@ -14,6 +15,58 @@ import {
   deleteMessage,
   editMessage,
 } from "../services/message.service"
+import { pushNotificationService } from "../services/pushNotifications.service";
+import { success } from "zod";
+// import { NotificationService } from "../services/NotificationService";
+import * as notifictionService from "../services/notification.service"
+
+// save message
+export const sendMessageController = async (req: Request, res: Response) => {
+  try {
+    const senderId = req.user?.id; // Must come from JWT middleware
+    const { receiverId, roomId, message } = req.body;
+
+    if (!senderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Sender ID missing or not authenticated",
+    });
+    }
+
+    // save message to database
+    // const savedMessage = await saveMessage(senderId, receiverId, roomId, message);
+
+    //  const newMessage = await saveMessage(
+    //   senderId,
+    //   receiverId,
+    //   roomId,
+    //   message
+    // );
+
+    // send push notification to receiver
+    
+      // await pushNotificationService.sendPushNotification(
+      await notifictionService.createNotification(
+        receiverId, 
+        "new Message",
+        message
+      );
+    
+      return res.status(200).json({
+      sucess: true,
+      message: "Message sent successfully",
+      // data: newMessage,
+      data: message
+      });
+  } catch (error: any) {
+    console.error("Error sending message:", error);
+    return res.status(500).json({
+      sucess: false,
+      message: error.message || "Failed to send message",
+    })
+}
+}
+
 
 export const fetchMessages = async (req: Request, res: Response) => {
   const { roomId } = req.params;

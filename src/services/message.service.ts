@@ -8,11 +8,24 @@ export const saveMessage = async (
 ) => {
   return await prisma.message.create({
     data: {
-      senderId,
-      receiverId,
-      roomId,
       message,
+      roomId,
+      read: false,
+      likedBy: [],
+      sender: {
+        connect: { id: senderId },
+      },
+      receiver: {
+        connect: { id: receiverId },
+      },
     },
+    
+    // data: {
+    //   senderId,
+    //   receiverId,
+    //   roomId,
+    //   message,
+    // },
   });
 };
 

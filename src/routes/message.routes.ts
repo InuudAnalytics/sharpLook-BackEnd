@@ -2,6 +2,7 @@
 import { Router } from "express"
 import { verifyToken } from "../middlewares/auth.middleware"
 import {
+  sendMessageController,
   fetchMessages,
   markAsRead,
   likeMessage,
@@ -21,6 +22,7 @@ import { objectEnumValues } from "@prisma/client/runtime/library"
 
 const router = Router()
 
+router.post("/send", verifyToken, sendMessageController);
 router.get("/:roomId", verifyToken, fetchMessages)
 router.patch("/:roomId/read", verifyToken, markAsRead)
 router.patch("/:messageId/like", verifyToken, likeMessage)

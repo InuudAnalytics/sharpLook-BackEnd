@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"],
     "moduleResolution": "node",
-    "ignoreDeprecations": "5.0"
+    "ignoreDeprecations": "6.0"
   },
 
   "include": ["src", "seed.ts"]
