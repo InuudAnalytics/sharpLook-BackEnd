@@ -8,11 +8,23 @@ const prisma_1 = __importDefault(require("../config/prisma"));
 const saveMessage = async (senderId, receiverId, roomId, message) => {
     return await prisma_1.default.message.create({
         data: {
-            senderId,
-            receiverId,
-            roomId,
             message,
+            roomId,
+            read: false,
+            likedBy: [],
+            sender: {
+                connect: { id: senderId },
+            },
+            receiver: {
+                connect: { id: receiverId },
+            },
         },
+        // data: {
+        //   senderId,
+        //   receiverId,
+        //   roomId,
+        //   message,
+        // },
     });
 };
 exports.saveMessage = saveMessage;
