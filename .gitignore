@@ -6,3 +6,4 @@ node_modules
 /generated/prisma
 /prisma/seed.ts
 src/config/firebaseServiceAccount.json
+src/config/serviceAccountKey.json
