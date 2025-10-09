@@ -3,6 +3,34 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteNotificationController = exports.getNotifications = exports.sendTestNotification = void 0;
 const notification_service_1 = require("../services/notification.service");
 const library_1 = require("@prisma/client/runtime/library");
+// test with post man
+// import admin from "firebase-admin";
+// export const sendChatNotification = async (req: Request, res: Response) => {
+//   try {
+//     const { token, title, body, roomId } = req.body;
+//     const message = {
+//       token,
+//       data: {
+//         type: "CHAT_MESSAGE",
+//         roomId,
+//       },
+//       notification: {
+//         title,
+//         body,
+//       },
+//     };
+//     const response = await admin.messaging().send(message);
+//     res.status(200).json({
+//       success: true,
+//       message: "Notification sent successfully!",
+//       response,
+//     });
+//   } catch (error: any) {
+//     console.error("❌ Error sending notification:", error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+// stop test
 const sendTestNotification = async (req, res) => {
     try {
         const { userId, message, type } = req.body;

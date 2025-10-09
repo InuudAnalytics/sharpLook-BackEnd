@@ -4,6 +4,9 @@ import { verifyToken } from "../middlewares/auth.middleware"
 
 const router = express.Router()
 
+// test with postman
+// router.post("/chat", sendChatNotification);
+
 router.post("/sendNotification", sendTestNotification)
 router.get("/getNotifications", verifyToken, getNotifications)
 router.delete("/delete/:notificationId", verifyToken, deleteNotificationController);
