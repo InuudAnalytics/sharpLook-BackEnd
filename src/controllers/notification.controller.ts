@@ -7,37 +7,37 @@ import { success } from "zod";
 
 
 
-// test with post man
-// import admin from "firebase-admin";
+// test with postman
+import admin from "firebase-admin";
 
-// export const sendChatNotification = async (req: Request, res: Response) => {
-//   try {
-//     const { token, title, body, roomId } = req.body;
+export const sendChatNotification = async (req: Request, res: Response) => {
+  try {
+    const { token, title, body, roomId } = req.body;
 
-//     const message = {
-//       token,
-//       data: {
-//         type: "CHAT_MESSAGE",
-//         roomId,
-//       },
-//       notification: {
-//         title,
-//         body,
-//       },
-//     };
+    const message = {
+      token,
+      data: {
+        type: "CHAT_MESSAGE",
+        roomId,
+      },
+      notification: {
+        title,
+        body,
+      },
+    };
 
-//     const response = await admin.messaging().send(message);
+    const response = await admin.messaging().send(message);
 
-//     res.status(200).json({
-//       success: true,
-//       message: "Notification sent successfully!",
-//       response,
-//     });
-//   } catch (error: any) {
-//     console.error("❌ Error sending notification:", error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// };
+    res.status(200).json({
+      success: true,
+      message: "Notification sent successfully!",
+      response,
+    });
+  } catch (error: any) {
+    console.error("❌ Error sending notification:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 // stop test
 
 

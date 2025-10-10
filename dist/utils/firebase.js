@@ -21,7 +21,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //   });
 // }
 // export default admin;
-// main path
+// main path & test 
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -40,23 +40,3 @@ if (!firebase_admin_1.default.apps.length) {
     });
 }
 exports.default = firebase_admin_1.default;
-// // test with postman
-// import admin from "firebase-admin";
-// import dotenv from "dotenv";
-// dotenv.config();
-// if (!admin.apps.length) {
-//   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-//   if (!serviceAccountJson) {
-//     throw new Error("❌ FIREBASE_SERVICE_ACCOUNT_JSON is not defined in .env");
-//   }
-//   const serviceAccount = JSON.parse(serviceAccountJson);
-//   admin.initializeApp({
-//     credential: admin.credential.cert({
-//       projectId: serviceAccount.project_id,
-//       clientEmail: serviceAccount.client_email,
-//       privateKey: serviceAccount.private_key.replace(/\\n/g, "\n"),
-//     }),
-//   });
-//   console.log("✅ Firebase Admin initialized successfully");
-// }
-// export default admin;

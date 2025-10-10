@@ -8,7 +8,7 @@ const notification_controller_1 = require("../controllers/notification.controlle
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = express_1.default.Router();
 // test with postman
-// router.post("/chat", sendChatNotification);
+router.post("/chat", notification_controller_1.sendChatNotification);
 router.post("/sendNotification", notification_controller_1.sendTestNotification);
 router.get("/getNotifications", auth_middleware_1.verifyToken, notification_controller_1.getNotifications);
 router.delete("/delete/:notificationId", auth_middleware_1.verifyToken, notification_controller_1.deleteNotificationController);
