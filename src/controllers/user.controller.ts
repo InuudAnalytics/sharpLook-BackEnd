@@ -5,6 +5,7 @@ import {
   updateClientLocationPreferences,
   getTopRatedVendors,
  getVendorDetails,
+ getAllVendors,
  updateUserAvatar,
  deleteUserAccount
 } from "../services/user.services"
@@ -86,6 +87,27 @@ export const fetchTopVendors = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: err.message })
   }
 }
+
+export const fetchAllVendors = async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+
+  try {
+    const result = await getAllVendors(page, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "All vendors fetched successfully",
+      data: result.vendors,
+      pagination: result.pagination,
+    });
+  } catch (err: any) {
+    console.error("❌ Error occurred while fetching vendors:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
 
 
 export const getAVendorDetails = async (req: Request, res: Response) => {

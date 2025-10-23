@@ -148,6 +148,71 @@ export const getVendorDetails = async (vendorId: string) => {
 };
 
 
+export const getAllVendors = async (page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+
+  // Fetch vendors with relations
+  const vendors = await prisma.user.findMany({
+    where: { role: "VENDOR" },
+    skip,
+    take: limit,
+    include: {
+      vendorOnboarding: true,
+      vendorAvailability: true,
+      vendorServices: true,
+      vendorReviews: true,
+      promotions: {
+        where: { isActive: true },
+      },
+      products: true, // we'll filter approved ones below
+      wallet: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  // Get total vendor count (for pagination)
+  const totalVendors = await prisma.user.count({
+    where: { role: "VENDOR" },
+  });
+
+  // Process vendors (compute ratings, filter products)
+  const processed = vendors.map((vendor: any) => {
+    const reviews = vendor.vendorReviews || [];
+    const totalReviews = reviews.length;
+    const avgRating =
+      totalReviews > 0
+        ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / totalReviews
+        : 0;
+
+    const approvedProducts = (vendor.products || []).filter(
+      (p: any) => p.approvalStatus === ApprovalStatus.APPROVED
+    );
+
+    return {
+      ...vendor,
+      avgRating,
+      totalReviews,
+      products: approvedProducts,
+    };
+  });
+
+  // Return paginated structure
+  return {
+    vendors: processed,
+    pagination: {
+      total: totalVendors,
+      page,
+      limit,
+      totalPages: Math.ceil(totalVendors / limit),
+      hasNextPage: page * limit < totalVendors,
+      hasPrevPage: page > 1,
+    },
+  };
+};
+
+
 
 
 
