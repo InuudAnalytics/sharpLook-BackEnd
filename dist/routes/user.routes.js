@@ -12,6 +12,7 @@ router.put("/updateProfile", auth_middleware_1.verifyToken, user_controller_1.up
 router.put("/location", auth_middleware_1.verifyToken, (0, auth_middleware_1.requireRole)(["CLIENT"]), user_controller_1.setClientLocationPreferences);
 router.get("/nearby-vendors", vendor_controller_1.getNearbyVendors);
 router.get("/topVendors", user_controller_1.fetchTopVendors);
+router.get("/vendors", user_controller_1.fetchAllVendors);
 router.get("/getVendorDetails", user_controller_1.getAVendorDetails);
 router.get("/products/top-selling", product_controller_1.fetchTopSellingProducts);
 router.put("/avatar", auth_middleware_1.verifyToken, upload_middleware_1.uploadSingle3, user_controller_1.updateAvatar);

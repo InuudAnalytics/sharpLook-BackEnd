@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateFcmToken = exports.handleDeleteAccount = exports.updateAvatar = exports.getAVendorDetails = exports.fetchTopVendors = exports.setClientLocationPreferences = exports.updateMyProfile = exports.getMyProfile = void 0;
+exports.updateFcmToken = exports.handleDeleteAccount = exports.updateAvatar = exports.getAVendorDetails = exports.fetchAllVendors = exports.fetchTopVendors = exports.setClientLocationPreferences = exports.updateMyProfile = exports.getMyProfile = void 0;
 const user_services_1 = require("../services/user.services");
 const prisma_1 = __importDefault(require("../config/prisma"));
 const getMyProfile = async (req, res) => {
@@ -73,6 +73,24 @@ const fetchTopVendors = async (req, res) => {
     }
 };
 exports.fetchTopVendors = fetchTopVendors;
+const fetchAllVendors = async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    try {
+        const result = await (0, user_services_1.getAllVendors)(page, limit);
+        res.status(200).json({
+            success: true,
+            message: "All vendors fetched successfully",
+            data: result.vendors,
+            pagination: result.pagination,
+        });
+    }
+    catch (err) {
+        console.error("❌ Error occurred while fetching vendors:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.fetchAllVendors = fetchAllVendors;
 const getAVendorDetails = async (req, res) => {
     const { vendorId } = req.body;
     if (!vendorId) {

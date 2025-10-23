@@ -25,6 +25,7 @@ const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+// console.log("This is raw,",raw);
 if (!raw) {
     throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
 }
