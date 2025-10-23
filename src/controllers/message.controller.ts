@@ -36,12 +36,12 @@ export const sendMessageController = async (req: Request, res: Response) => {
     // save message to database
     // const savedMessage = await saveMessage(senderId, receiverId, roomId, message);
 
-    //  const newMessage = await saveMessage(
-    //   senderId,
-    //   receiverId,
-    //   roomId,
-    //   message
-    // );
+     const newMessage = await saveMessage(
+      senderId,
+      receiverId,
+      roomId,
+      message
+    );
 
     // send push notification to receiver
     
@@ -55,8 +55,8 @@ export const sendMessageController = async (req: Request, res: Response) => {
       return res.status(200).json({
       sucess: true,
       message: "Message sent successfully",
-      // data: newMessage,
-      data: message
+      data: newMessage,
+      // data: message
       });
   } catch (error: any) {
     console.error("Error sending message:", error);

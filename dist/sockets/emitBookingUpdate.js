@@ -1,5 +1,6 @@
 "use strict";
 // // src/utils/emitBookingUpdate.ts
+Object.defineProperty(exports, "__esModule", { value: true });
 // import { getSocketIO } from "./socket.handlers";
 // import { generateRoomId } from "./generateRoomId";
 // export function emitBookingUpdate({

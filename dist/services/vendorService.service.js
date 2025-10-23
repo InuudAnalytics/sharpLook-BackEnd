@@ -26,6 +26,7 @@ const getVendorServices = async (userId) => {
     return await prisma_1.default.vendorService.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
+        include: { vendor: true } // update the vendor to the services
     });
 };
 exports.getVendorServices = getVendorServices;

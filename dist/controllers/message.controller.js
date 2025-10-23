@@ -50,20 +50,15 @@ const sendMessageController = async (req, res) => {
         }
         // save message to database
         // const savedMessage = await saveMessage(senderId, receiverId, roomId, message);
-        //  const newMessage = await saveMessage(
-        //   senderId,
-        //   receiverId,
-        //   roomId,
-        //   message
-        // );
+        const newMessage = await (0, message_service_1.saveMessage)(senderId, receiverId, roomId, message);
         // send push notification to receiver
         // await pushNotificationService.sendPushNotification(
         await notifictionService.createNotification(receiverId, "new Message", message);
         return res.status(200).json({
             sucess: true,
             message: "Message sent successfully",
-            // data: newMessage,
-            data: message
+            data: newMessage,
+            // data: message
         });
     }
     catch (error) {

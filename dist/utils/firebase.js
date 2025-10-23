@@ -21,6 +21,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //   });
 // }
 // export default admin;
+// main path & test 
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();

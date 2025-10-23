@@ -25,7 +25,7 @@
 
 
 
-
+// main path & test 
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 
@@ -54,3 +54,4 @@ if (!admin.apps.length) {
 }
 
 export default admin;
+
