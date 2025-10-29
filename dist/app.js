@@ -28,6 +28,7 @@ const category_routes_1 = __importDefault(require("./routes/category.routes"));
 const offer_routes_1 = __importDefault(require("./routes/offer.routes"));
 const pushNotification_routes_1 = __importDefault(require("./routes/pushNotification.routes"));
 const virtualAcct_routes_1 = __importDefault(require("./routes/virtualAcct.routes"));
+const agoraRoutes_1 = __importDefault(require("./routes/agoraRoutes"));
 // For clients
 const clientService_routes_1 = __importDefault(require("./routes/clientService.routes"));
 const cart_routes_1 = __importDefault(require("./routes/cart.routes"));
@@ -76,6 +77,7 @@ app.use("/api/v1/payment", payment_routes_1.default);
 app.use("/api/v1/withdrawals", withdrawal_routes_1.default);
 app.use("/api/v1/serviceCategory", category_routes_1.default);
 app.use("/api/v1/offers", offer_routes_1.default);
+app.use('/api/v1/agora', agoraRoutes_1.default);
 // For clients 
 app.use("/api/v1/client", clientService_routes_1.default);
 app.use("/api/v1/client", cart_routes_1.default);

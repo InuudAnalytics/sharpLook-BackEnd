@@ -24,6 +24,8 @@ import categoryRoutes from "./routes/category.routes"
 import createOffersRoutes from "./routes/offer.routes"
 import pushNotificationRoutes from './routes/pushNotification.routes';
 import createMyAcctRoutes from './routes/virtualAcct.routes';
+import agoraRoutes from './routes/agoraRoutes';
+
 
 
 // For clients
@@ -91,6 +93,8 @@ app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/withdrawals", withdrawalRoutes);
 app.use("/api/v1/serviceCategory", categoryRoutes);
 app.use("/api/v1/offers", createOffersRoutes);
+app.use('/api/v1/agora', agoraRoutes);
+
 
 
 
