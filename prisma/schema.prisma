@@ -55,7 +55,7 @@
 
       fcmToken  String? 
        isOnline  Boolean  @default(false)
-      lastSeen  DateTime @default(now())
+      lastSeen  DateTime? @default(now())
 
 
       // ✅ Wallet relation
