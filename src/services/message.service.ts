@@ -4,7 +4,10 @@ export const saveMessage = async (
   senderId: string,
   receiverId: string,
   roomId: string,
-  message: string
+  message: string,
+  type: string = "text",
+  mediaUrl?: string,
+  duration?: number
 ) => {
   return await prisma.message.create({
     data: {
@@ -12,6 +15,9 @@ export const saveMessage = async (
       roomId,
       read: false,
       likedBy: [],
+      type: type || "text",
+      mediaUrl: mediaUrl || null,
+      duration: duration || null,
       sender: {
         connect: { id: senderId },
       },
@@ -19,13 +25,6 @@ export const saveMessage = async (
         connect: { id: receiverId },
       },
     },
-    
-    // data: {
-    //   senderId,
-    //   receiverId,
-    //   roomId,
-    //   message,
-    // },
   });
 };
 
@@ -33,6 +32,28 @@ export const getMessagesByRoomId = async (roomId: string) => {
   return await prisma.message.findMany({
     where: { roomId },
     orderBy: { createdAt: "asc" },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          isOnline: true,
+          lastSeen: true,
+        },
+      },
+      receiver: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          isOnline: true,
+          lastSeen: true,
+        },
+      },
+    },
   });
 };
 
@@ -45,6 +66,7 @@ export const markMessagesAsRead = async (roomId: string, userId: string) => {
     },
     data: {
       read: true,
+      readAt: new Date(),
     },
   });
 };
@@ -57,9 +79,7 @@ export const toggleMessageLike = async (messageId: string, userId: string) => {
 
   if (!message) throw new Error("Message not found");
 
-  // Ensure likedBy is an array
   const likedBy: string[] = message.likedBy ?? [];
-
   const hasLiked = likedBy.includes(userId);
 
   const updatedLikedBy = hasLiked
@@ -69,7 +89,7 @@ export const toggleMessageLike = async (messageId: string, userId: string) => {
   const updated = await prisma.message.update({
     where: { id: messageId },
     data: {
-      likedBy: { set: updatedLikedBy }, // ✅ Prisma expects { set: string[] }
+      likedBy: { set: updatedLikedBy },
     },
   });
 
@@ -85,9 +105,7 @@ export const countUnreadMessages = async (userId: string) => {
   });
 };
 
-
 export const getChatListForUser = async (userId: string) => {
-  // Step 1: Get unique roomIds where the user is a participant
   const roomIds = await prisma.message.findMany({
     where: {
       OR: [{ senderId: userId }, { receiverId: userId }],
@@ -100,7 +118,6 @@ export const getChatListForUser = async (userId: string) => {
 
   const roomIdList = roomIds.map((r) => r.roomId);
 
-  // Step 2: For each roomId, get the latest message (ordered by createdAt DESC)
   const messages = await Promise.all(
     roomIdList.map(async (roomId) => {
       const latestMessage = await prisma.message.findFirst({
@@ -122,6 +139,8 @@ export const getChatListForUser = async (userId: string) => {
               phone: true,
               role: true,
               avatar: true,
+              isOnline: true,
+              lastSeen: true,
               vendorOnboarding: {
                 select: {
                   businessName: true,
@@ -138,6 +157,8 @@ export const getChatListForUser = async (userId: string) => {
               phone: true,
               role: true,
               avatar: true,
+              isOnline: true,
+              lastSeen: true,
               vendorOnboarding: {
                 select: {
                   businessName: true,
@@ -152,7 +173,6 @@ export const getChatListForUser = async (userId: string) => {
     })
   );
 
-  // Filter out any null messages (shouldn’t happen unless deleted)
   return messages
     .filter((msg): msg is NonNullable<typeof msg> => msg !== null)
     .map((room) => ({
@@ -168,6 +188,8 @@ export const getChatListForUser = async (userId: string) => {
         phone: room.sender.phone,
         avatar: room.sender.avatar,
         role: room.sender.role,
+        isOnline: room.sender.isOnline,
+        lastSeen: room.sender.lastSeen,
       },
       receiver: {
         id: room.receiver.id,
@@ -179,21 +201,28 @@ export const getChatListForUser = async (userId: string) => {
         phone: room.receiver.phone,
         avatar: room.receiver.avatar,
         role: room.receiver.role,
+        isOnline: room.receiver.isOnline,
+        lastSeen: room.receiver.lastSeen,
       },
     }));
 };
 
 export const getClientChatList = async (userId: string) => {
-  // Get all messages where the user is either the sender or receiver
   const messages = await prisma.message.findMany({
     where: {
       OR: [{ senderId: userId }, { receiverId: userId }],
     },
     orderBy: { createdAt: 'desc' },
     select: {
+      id: true,
       roomId: true,
       createdAt: true,
       message: true,
+      type: true,
+      mediaUrl: true,
+      duration: true,
+      read: true,
+      readAt: true,
       sender: {
         select: {
           id: true,
@@ -203,6 +232,8 @@ export const getClientChatList = async (userId: string) => {
           email: true,
           avatar: true,
           phone: true,
+          isOnline: true,
+          lastSeen: true,
           vendorOnboarding: { select: { businessName: true } },
         },
       },
@@ -215,13 +246,14 @@ export const getClientChatList = async (userId: string) => {
           email: true,
           avatar: true,
           phone: true,
+          isOnline: true,
+          lastSeen: true,
           vendorOnboarding: { select: { businessName: true } },
         },
       },
     },
   });
 
-  // Group messages by roomId and attach vendor info
   const grouped = messages.reduce((acc, message) => {
     const otherUser = message.sender.id === userId ? message.receiver : message.sender;
 
@@ -236,15 +268,23 @@ export const getClientChatList = async (userId: string) => {
           email: otherUser.email,
           avatar: otherUser.avatar,
           phoneNumber: otherUser.phone,
+          isOnline: otherUser.isOnline,
+          lastSeen: otherUser.lastSeen,
         },
         messages: [],
       };
     }
 
     acc[message.roomId!].messages.push({
+      id: message.id,
       createdAt: message.createdAt,
       message: message.message,
       senderId: message.sender.id,
+      type: message.type,
+      mediaUrl: message.mediaUrl,
+      duration: message.duration,
+      seen: message.read,
+      seenAt: message.readAt,
     });
 
     return acc;
@@ -253,18 +293,22 @@ export const getClientChatList = async (userId: string) => {
   return Object.values(grouped);
 };
 
-
 export const getVendorChatList = async (userId: string) => {
-  // Get all messages where the vendor was involved
   const messages = await prisma.message.findMany({
     where: {
       OR: [{ senderId: userId }, { receiverId: userId }],
     },
     orderBy: { createdAt: 'desc' },
     select: {
+      id: true,
       roomId: true,
       createdAt: true,
       message: true,
+      type: true,
+      mediaUrl: true,
+      duration: true,
+      read: true,
+      readAt: true,
       sender: {
         select: {
           id: true,
@@ -274,6 +318,8 @@ export const getVendorChatList = async (userId: string) => {
           email: true,
           avatar: true,
           phone: true,
+          isOnline: true,
+          lastSeen: true,
         },
       },
       receiver: {
@@ -285,12 +331,13 @@ export const getVendorChatList = async (userId: string) => {
           email: true,
           avatar: true,
           phone: true,
+          isOnline: true,
+          lastSeen: true,
         },
       },
     },
   });
 
-  // Group messages by roomId and attach client info
   const grouped = messages.reduce((acc, message) => {
     const { roomId } = message;
 
@@ -311,41 +358,30 @@ export const getVendorChatList = async (userId: string) => {
           email: otherUser.email,
           avatar: otherUser.avatar,
           phoneNumber: otherUser.phone,
+          isOnline: otherUser.isOnline,
+          lastSeen: otherUser.lastSeen,
         },
         messages: [],
       };
     }
 
     acc[roomId].messages.push({
+      id: message.id,
       createdAt: message.createdAt,
       message: message.message,
       senderId: message.sender.id,
+      type: message.type,
+      mediaUrl: message.mediaUrl,
+      duration: message.duration,
+      seen: message.read,
+      seenAt: message.readAt,
     });
 
     return acc;
-  }, {} as Record<string, {
-    roomId: string;
-    createdAt: Date;
-    message: string;
-    client: {
-      id: string;
-      name: string;
-      email: string;
-      avatar: string | null;
-      phoneNumber: string | null;
-    };
-    messages: {
-      createdAt: Date;
-      message: string;
-      senderId: string;
-    }[];
-  }>);
+  }, {} as Record<string, any>);
 
   return Object.values(grouped);
 };
-
-
-
 
 export const getChatPreviews = async (userId: string) => {
   const rooms = await getChatListForUser(userId);
@@ -366,9 +402,6 @@ export const getChatPreviews = async (userId: string) => {
 
   return previews;
 };
-
-
-
 
 export const getClientChatPreviews = async (userId: string) => {
   const clientChats = await getClientChatList(userId);
@@ -391,9 +424,6 @@ export const getClientChatPreviews = async (userId: string) => {
   return previews;
 };
 
-
-
-
 export const getVendorChatPreviews = async (userId: string) => {
   const vendorChats = await getVendorChatList(userId);
 
@@ -415,9 +445,6 @@ export const getVendorChatPreviews = async (userId: string) => {
   return previews;
 };
 
-
-
-
 export const deleteMessage = async (messageId: string) => {
   return await prisma.message.delete({
     where: { id: messageId },
@@ -431,3 +458,16 @@ export const editMessage = async (messageId: string, newText: string) => {
   });
 };
 
+// Helper function to update user's last activity
+export const updateUserActivity = async (userId: string) => {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        lastSeen: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Error updating user activity:", error);
+  }
+};

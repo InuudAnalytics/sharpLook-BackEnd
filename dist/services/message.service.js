@@ -3,15 +3,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editMessage = exports.deleteMessage = exports.getVendorChatPreviews = exports.getClientChatPreviews = exports.getChatPreviews = exports.getVendorChatList = exports.getClientChatList = exports.getChatListForUser = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
+exports.updateUserActivity = exports.editMessage = exports.deleteMessage = exports.getVendorChatPreviews = exports.getClientChatPreviews = exports.getChatPreviews = exports.getVendorChatList = exports.getClientChatList = exports.getChatListForUser = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
-const saveMessage = async (senderId, receiverId, roomId, message) => {
+const saveMessage = async (senderId, receiverId, roomId, message, type = "text", mediaUrl, duration) => {
     return await prisma_1.default.message.create({
         data: {
             message,
             roomId,
             read: false,
             likedBy: [],
+            type: type || "text",
+            mediaUrl: mediaUrl || null,
+            duration: duration || null,
             sender: {
                 connect: { id: senderId },
             },
@@ -19,12 +22,6 @@ const saveMessage = async (senderId, receiverId, roomId, message) => {
                 connect: { id: receiverId },
             },
         },
-        // data: {
-        //   senderId,
-        //   receiverId,
-        //   roomId,
-        //   message,
-        // },
     });
 };
 exports.saveMessage = saveMessage;
@@ -32,6 +29,28 @@ const getMessagesByRoomId = async (roomId) => {
     return await prisma_1.default.message.findMany({
         where: { roomId },
         orderBy: { createdAt: "asc" },
+        include: {
+            sender: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    avatar: true,
+                    isOnline: true,
+                    lastSeen: true,
+                },
+            },
+            receiver: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    avatar: true,
+                    isOnline: true,
+                    lastSeen: true,
+                },
+            },
+        },
     });
 };
 exports.getMessagesByRoomId = getMessagesByRoomId;
@@ -44,6 +63,7 @@ const markMessagesAsRead = async (roomId, userId) => {
         },
         data: {
             read: true,
+            readAt: new Date(),
         },
     });
 };
@@ -55,7 +75,6 @@ const toggleMessageLike = async (messageId, userId) => {
     });
     if (!message)
         throw new Error("Message not found");
-    // Ensure likedBy is an array
     const likedBy = message.likedBy ?? [];
     const hasLiked = likedBy.includes(userId);
     const updatedLikedBy = hasLiked
@@ -64,7 +83,7 @@ const toggleMessageLike = async (messageId, userId) => {
     const updated = await prisma_1.default.message.update({
         where: { id: messageId },
         data: {
-            likedBy: { set: updatedLikedBy }, // ✅ Prisma expects { set: string[] }
+            likedBy: { set: updatedLikedBy },
         },
     });
     return updated;
@@ -80,7 +99,6 @@ const countUnreadMessages = async (userId) => {
 };
 exports.countUnreadMessages = countUnreadMessages;
 const getChatListForUser = async (userId) => {
-    // Step 1: Get unique roomIds where the user is a participant
     const roomIds = await prisma_1.default.message.findMany({
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
@@ -91,7 +109,6 @@ const getChatListForUser = async (userId) => {
         distinct: ['roomId'],
     });
     const roomIdList = roomIds.map((r) => r.roomId);
-    // Step 2: For each roomId, get the latest message (ordered by createdAt DESC)
     const messages = await Promise.all(roomIdList.map(async (roomId) => {
         const latestMessage = await prisma_1.default.message.findFirst({
             where: {
@@ -112,6 +129,8 @@ const getChatListForUser = async (userId) => {
                         phone: true,
                         role: true,
                         avatar: true,
+                        isOnline: true,
+                        lastSeen: true,
                         vendorOnboarding: {
                             select: {
                                 businessName: true,
@@ -128,6 +147,8 @@ const getChatListForUser = async (userId) => {
                         phone: true,
                         role: true,
                         avatar: true,
+                        isOnline: true,
+                        lastSeen: true,
                         vendorOnboarding: {
                             select: {
                                 businessName: true,
@@ -139,7 +160,6 @@ const getChatListForUser = async (userId) => {
         });
         return latestMessage;
     }));
-    // Filter out any null messages (shouldn’t happen unless deleted)
     return messages
         .filter((msg) => msg !== null)
         .map((room) => ({
@@ -154,6 +174,8 @@ const getChatListForUser = async (userId) => {
             phone: room.sender.phone,
             avatar: room.sender.avatar,
             role: room.sender.role,
+            isOnline: room.sender.isOnline,
+            lastSeen: room.sender.lastSeen,
         },
         receiver: {
             id: room.receiver.id,
@@ -164,21 +186,28 @@ const getChatListForUser = async (userId) => {
             phone: room.receiver.phone,
             avatar: room.receiver.avatar,
             role: room.receiver.role,
+            isOnline: room.receiver.isOnline,
+            lastSeen: room.receiver.lastSeen,
         },
     }));
 };
 exports.getChatListForUser = getChatListForUser;
 const getClientChatList = async (userId) => {
-    // Get all messages where the user is either the sender or receiver
     const messages = await prisma_1.default.message.findMany({
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
         },
         orderBy: { createdAt: 'desc' },
         select: {
+            id: true,
             roomId: true,
             createdAt: true,
             message: true,
+            type: true,
+            mediaUrl: true,
+            duration: true,
+            read: true,
+            readAt: true,
             sender: {
                 select: {
                     id: true,
@@ -188,6 +217,8 @@ const getClientChatList = async (userId) => {
                     email: true,
                     avatar: true,
                     phone: true,
+                    isOnline: true,
+                    lastSeen: true,
                     vendorOnboarding: { select: { businessName: true } },
                 },
             },
@@ -200,12 +231,13 @@ const getClientChatList = async (userId) => {
                     email: true,
                     avatar: true,
                     phone: true,
+                    isOnline: true,
+                    lastSeen: true,
                     vendorOnboarding: { select: { businessName: true } },
                 },
             },
         },
     });
-    // Group messages by roomId and attach vendor info
     const grouped = messages.reduce((acc, message) => {
         const otherUser = message.sender.id === userId ? message.receiver : message.sender;
         if (otherUser.role !== 'VENDOR')
@@ -219,14 +251,22 @@ const getClientChatList = async (userId) => {
                     email: otherUser.email,
                     avatar: otherUser.avatar,
                     phoneNumber: otherUser.phone,
+                    isOnline: otherUser.isOnline,
+                    lastSeen: otherUser.lastSeen,
                 },
                 messages: [],
             };
         }
         acc[message.roomId].messages.push({
+            id: message.id,
             createdAt: message.createdAt,
             message: message.message,
             senderId: message.sender.id,
+            type: message.type,
+            mediaUrl: message.mediaUrl,
+            duration: message.duration,
+            seen: message.read,
+            seenAt: message.readAt,
         });
         return acc;
     }, {});
@@ -234,16 +274,21 @@ const getClientChatList = async (userId) => {
 };
 exports.getClientChatList = getClientChatList;
 const getVendorChatList = async (userId) => {
-    // Get all messages where the vendor was involved
     const messages = await prisma_1.default.message.findMany({
         where: {
             OR: [{ senderId: userId }, { receiverId: userId }],
         },
         orderBy: { createdAt: 'desc' },
         select: {
+            id: true,
             roomId: true,
             createdAt: true,
             message: true,
+            type: true,
+            mediaUrl: true,
+            duration: true,
+            read: true,
+            readAt: true,
             sender: {
                 select: {
                     id: true,
@@ -253,6 +298,8 @@ const getVendorChatList = async (userId) => {
                     email: true,
                     avatar: true,
                     phone: true,
+                    isOnline: true,
+                    lastSeen: true,
                 },
             },
             receiver: {
@@ -264,11 +311,12 @@ const getVendorChatList = async (userId) => {
                     email: true,
                     avatar: true,
                     phone: true,
+                    isOnline: true,
+                    lastSeen: true,
                 },
             },
         },
     });
-    // Group messages by roomId and attach client info
     const grouped = messages.reduce((acc, message) => {
         const { roomId } = message;
         if (!roomId)
@@ -287,14 +335,22 @@ const getVendorChatList = async (userId) => {
                     email: otherUser.email,
                     avatar: otherUser.avatar,
                     phoneNumber: otherUser.phone,
+                    isOnline: otherUser.isOnline,
+                    lastSeen: otherUser.lastSeen,
                 },
                 messages: [],
             };
         }
         acc[roomId].messages.push({
+            id: message.id,
             createdAt: message.createdAt,
             message: message.message,
             senderId: message.sender.id,
+            type: message.type,
+            mediaUrl: message.mediaUrl,
+            duration: message.duration,
+            seen: message.read,
+            seenAt: message.readAt,
         });
         return acc;
     }, {});
@@ -361,3 +417,18 @@ const editMessage = async (messageId, newText) => {
     });
 };
 exports.editMessage = editMessage;
+// Helper function to update user's last activity
+const updateUserActivity = async (userId) => {
+    try {
+        await prisma_1.default.user.update({
+            where: { id: userId },
+            data: {
+                lastSeen: new Date(),
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error updating user activity:", error);
+    }
+};
+exports.updateUserActivity = updateUserActivity;

@@ -54,6 +54,8 @@
       withdrawalRequests    WithdrawalRequest[]    @relation("UserWithdrawals")
 
       fcmToken  String? 
+       isOnline  Boolean  @default(false)
+      lastSeen  DateTime @default(now())
 
 
       // ✅ Wallet relation
@@ -376,6 +378,14 @@
       roomId     String?
       read       Boolean  @default(false)
 
+  type       String?  @default("text") // "text", "image", "voice", "document"
+  mediaUrl   String?  // URL to uploaded media file
+  duration   Int?     // For voice messages in seconds
+  
+  
+      readAt     DateTime? 
+
+  
       likedBy  String[] @default([])
       sender   User     @relation("SentMessages", fields: [senderId], references: [id])
       receiver User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
