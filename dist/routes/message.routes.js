@@ -65,19 +65,35 @@ const upload = (0, multer_1.default)({
     },
     fileFilter: fileFilter,
 });
-// Message routes
+// ==================== MESSAGE ROUTES ====================
+// Send message
 router.post("/send", auth_middleware_1.verifyToken, message_controller_1.sendMessageController);
+// Upload media
 router.post("/upload", auth_middleware_1.verifyToken, upload.single("file"), message_controller_1.uploadMediaController);
+// Get messages for a room
 router.get("/:roomId", auth_middleware_1.verifyToken, message_controller_1.fetchMessages);
+// Mark messages as read
 router.patch("/:roomId/read", auth_middleware_1.verifyToken, message_controller_1.markAsRead);
+// Like/unlike message
 router.patch("/:messageId/like", auth_middleware_1.verifyToken, message_controller_1.likeMessage);
-router.get("/unread/count", auth_middleware_1.verifyToken, message_controller_1.getUnreadMessageCount);
-// Chat list routes
-router.get("/user/getClientChatsList", auth_middleware_1.verifyToken, message_controller_1.getClientChatListController);
-router.get("/user/getVendorChats", auth_middleware_1.verifyToken, message_controller_1.getVendorChatListController);
-router.get("/client/previews", auth_middleware_1.verifyToken, message_controller_1.getClientChatPreviewsController);
-router.get("/vendor/previews", auth_middleware_1.verifyToken, message_controller_1.getVendorChatPreviewsController);
-// Message actions
+// Delete message
 router.delete("/:messageId", auth_middleware_1.verifyToken, message_controller_1.deleteMessageController);
+// Edit message
 router.patch("/edit/:messageId", auth_middleware_1.verifyToken, message_controller_1.editMessageController);
+// ==================== UNREAD COUNT ROUTES ====================
+//  Get total unread message count (for HomeScreen badge)
+router.get("/unread/count", auth_middleware_1.verifyToken, message_controller_1.getUnreadMessageCount);
+//  Get unread messages grouped by room (for ChatListScreen)
+router.get("/client/unread-by-room", auth_middleware_1.verifyToken, message_controller_1.getUnreadMessagesByRoomController);
+//  Get unread count for specific room (optional)
+router.get("/room/:roomId/unread-count", auth_middleware_1.verifyToken, message_controller_1.getUnreadCountForRoomController);
+// ==================== CHAT LIST ROUTES ====================
+// Get client chat list
+router.get("/user/getClientChatsList", auth_middleware_1.verifyToken, message_controller_1.getClientChatListController);
+// Get vendor chat list
+router.get("/user/getVendorChats", auth_middleware_1.verifyToken, message_controller_1.getVendorChatListController);
+// Get client chat previews
+router.get("/client/previews", auth_middleware_1.verifyToken, message_controller_1.getClientChatPreviewsController);
+// Get vendor chat previews
+router.get("/vendor/previews", auth_middleware_1.verifyToken, message_controller_1.getVendorChatPreviewsController);
 exports.default = router;

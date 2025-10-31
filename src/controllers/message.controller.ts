@@ -15,6 +15,8 @@ import {
   deleteMessage,
   editMessage,
   updateUserActivity,
+  getUnreadMessagesByRoom, // ⭐ NEW
+  getUnreadCountForRoom,   // ⭐ NEW
 } from "../services/message.service";
 import { pushNotificationService } from "../services/pushNotifications.service";
 import * as notificationService from "../services/notification.service";
@@ -200,7 +202,7 @@ export const likeMessage = async (req: Request, res: Response) => {
   }
 };
 
-// Get unread message count
+// Get unread message count (total)
 export const getUnreadMessageCount = async (req: Request, res: Response) => {
   try {
     const count = await countUnreadMessages(req.user!.id);
@@ -213,6 +215,80 @@ export const getUnreadMessageCount = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: err.message,
+    });
+  }
+};
+
+// ⭐ NEW: Get unread messages grouped by room
+export const getUnreadMessagesByRoomController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const result = await getUnreadMessagesByRoom(userId);
+    
+    // Update user activity
+    await updateUserActivity(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Unread messages retrieved successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("Error fetching unread messages by room:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch unread messages",
+      error: error.message || "Unknown error",
+    });
+  }
+};
+
+// ⭐ NEW: Get unread count for a specific room
+export const getUnreadCountForRoomController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+    const { roomId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const unreadCount = await getUnreadCountForRoom(roomId, userId);
+    
+    // Update user activity
+    await updateUserActivity(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Unread count retrieved successfully",
+      data: {
+        roomId,
+        unreadCount,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching unread count for room:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch unread count",
+      error: error.message || "Unknown error",
     });
   }
 };

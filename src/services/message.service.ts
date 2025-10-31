@@ -105,6 +105,61 @@ export const countUnreadMessages = async (userId: string) => {
   });
 };
 
+// ⭐ NEW: Get unread messages grouped by room
+export const getUnreadMessagesByRoom = async (userId: string) => {
+  try {
+    // Get unread messages grouped by roomId
+    const unreadMessages = await prisma.message.groupBy({
+      by: ['roomId'],
+      where: {
+        receiverId: userId,
+        read: false,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Format the response
+    const unreadByRoom = unreadMessages.map(msg => ({
+      roomId: msg.roomId,
+      unreadCount: msg._count.id,
+    }));
+
+    // Get total unread count
+    const totalUnread = unreadByRoom.reduce(
+      (sum, room) => sum + room.unreadCount,
+      0
+    );
+
+    return {
+      totalUnread,
+      unreadByRoom,
+    };
+  } catch (error) {
+    console.error("Error getting unread messages by room:", error);
+    throw error;
+  }
+};
+
+// ⭐ NEW: Get unread count for a specific room
+export const getUnreadCountForRoom = async (roomId: string, userId: string) => {
+  try {
+    const unreadCount = await prisma.message.count({
+      where: {
+        roomId,
+        receiverId: userId,
+        read: false,
+      },
+    });
+
+    return unreadCount;
+  } catch (error) {
+    console.error("Error getting unread count for room:", error);
+    throw error;
+  }
+};
+
 export const getChatListForUser = async (userId: string) => {
   const roomIds = await prisma.message.findMany({
     where: {

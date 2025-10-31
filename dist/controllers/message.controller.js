@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editMessageController = exports.deleteMessageController = exports.getChatPreviewsController = exports.getChatList = exports.getVendorChatPreviewsController = exports.getClientChatPreviewsController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = exports.uploadMediaController = exports.sendMessageController = void 0;
+exports.editMessageController = exports.deleteMessageController = exports.getChatPreviewsController = exports.getChatList = exports.getVendorChatPreviewsController = exports.getClientChatPreviewsController = exports.getVendorChatListController = exports.getClientChatListController = exports.getUnreadCountForRoomController = exports.getUnreadMessagesByRoomController = exports.getUnreadMessageCount = exports.likeMessage = exports.markAsRead = exports.fetchMessages = exports.uploadMediaController = exports.sendMessageController = void 0;
 const message_service_1 = require("../services/message.service");
 const notificationService = __importStar(require("../services/notification.service"));
 // Send message (text or media)
@@ -184,7 +184,7 @@ const likeMessage = async (req, res) => {
     }
 };
 exports.likeMessage = likeMessage;
-// Get unread message count
+// Get unread message count (total)
 const getUnreadMessageCount = async (req, res) => {
     try {
         const count = await (0, message_service_1.countUnreadMessages)(req.user.id);
@@ -202,6 +202,68 @@ const getUnreadMessageCount = async (req, res) => {
     }
 };
 exports.getUnreadMessageCount = getUnreadMessageCount;
+// ⭐ NEW: Get unread messages grouped by room
+const getUnreadMessagesByRoomController = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "User not authenticated",
+            });
+        }
+        const result = await (0, message_service_1.getUnreadMessagesByRoom)(userId);
+        // Update user activity
+        await (0, message_service_1.updateUserActivity)(userId);
+        return res.status(200).json({
+            success: true,
+            message: "Unread messages retrieved successfully",
+            data: result,
+        });
+    }
+    catch (error) {
+        console.error("Error fetching unread messages by room:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch unread messages",
+            error: error.message || "Unknown error",
+        });
+    }
+};
+exports.getUnreadMessagesByRoomController = getUnreadMessagesByRoomController;
+// ⭐ NEW: Get unread count for a specific room
+const getUnreadCountForRoomController = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { roomId } = req.params;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "User not authenticated",
+            });
+        }
+        const unreadCount = await (0, message_service_1.getUnreadCountForRoom)(roomId, userId);
+        // Update user activity
+        await (0, message_service_1.updateUserActivity)(userId);
+        return res.status(200).json({
+            success: true,
+            message: "Unread count retrieved successfully",
+            data: {
+                roomId,
+                unreadCount,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error fetching unread count for room:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch unread count",
+            error: error.message || "Unknown error",
+        });
+    }
+};
+exports.getUnreadCountForRoomController = getUnreadCountForRoomController;
 // Get client chat list
 const getClientChatListController = async (req, res) => {
     try {

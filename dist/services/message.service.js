@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserActivity = exports.editMessage = exports.deleteMessage = exports.getVendorChatPreviews = exports.getClientChatPreviews = exports.getChatPreviews = exports.getVendorChatList = exports.getClientChatList = exports.getChatListForUser = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
+exports.updateUserActivity = exports.editMessage = exports.deleteMessage = exports.getVendorChatPreviews = exports.getClientChatPreviews = exports.getChatPreviews = exports.getVendorChatList = exports.getClientChatList = exports.getChatListForUser = exports.getUnreadCountForRoom = exports.getUnreadMessagesByRoom = exports.countUnreadMessages = exports.toggleMessageLike = exports.markMessagesAsRead = exports.getMessagesByRoomId = exports.saveMessage = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const saveMessage = async (senderId, receiverId, roomId, message, type = "text", mediaUrl, duration) => {
     return await prisma_1.default.message.create({
@@ -98,6 +98,56 @@ const countUnreadMessages = async (userId) => {
     });
 };
 exports.countUnreadMessages = countUnreadMessages;
+// ⭐ NEW: Get unread messages grouped by room
+const getUnreadMessagesByRoom = async (userId) => {
+    try {
+        // Get unread messages grouped by roomId
+        const unreadMessages = await prisma_1.default.message.groupBy({
+            by: ['roomId'],
+            where: {
+                receiverId: userId,
+                read: false,
+            },
+            _count: {
+                id: true,
+            },
+        });
+        // Format the response
+        const unreadByRoom = unreadMessages.map(msg => ({
+            roomId: msg.roomId,
+            unreadCount: msg._count.id,
+        }));
+        // Get total unread count
+        const totalUnread = unreadByRoom.reduce((sum, room) => sum + room.unreadCount, 0);
+        return {
+            totalUnread,
+            unreadByRoom,
+        };
+    }
+    catch (error) {
+        console.error("Error getting unread messages by room:", error);
+        throw error;
+    }
+};
+exports.getUnreadMessagesByRoom = getUnreadMessagesByRoom;
+// ⭐ NEW: Get unread count for a specific room
+const getUnreadCountForRoom = async (roomId, userId) => {
+    try {
+        const unreadCount = await prisma_1.default.message.count({
+            where: {
+                roomId,
+                receiverId: userId,
+                read: false,
+            },
+        });
+        return unreadCount;
+    }
+    catch (error) {
+        console.error("Error getting unread count for room:", error);
+        throw error;
+    }
+};
+exports.getUnreadCountForRoom = getUnreadCountForRoom;
 const getChatListForUser = async (userId) => {
     const roomIds = await prisma_1.default.message.findMany({
         where: {

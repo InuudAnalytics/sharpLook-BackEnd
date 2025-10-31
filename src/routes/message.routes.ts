@@ -16,6 +16,8 @@ import {
   deleteMessageController,
   editMessageController,
   uploadMediaController,
+  getUnreadMessagesByRoomController,    
+  getUnreadCountForRoomController,      
 } from "../controllers/message.controller";
 
 const router = Router();
@@ -83,22 +85,52 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-// Message routes
+// ==================== MESSAGE ROUTES ====================
+
+// Send message
 router.post("/send", verifyToken, sendMessageController);
+
+// Upload media
 router.post("/upload", verifyToken, upload.single("file"), uploadMediaController);
+
+// Get messages for a room
 router.get("/:roomId", verifyToken, fetchMessages);
+
+// Mark messages as read
 router.patch("/:roomId/read", verifyToken, markAsRead);
+
+// Like/unlike message
 router.patch("/:messageId/like", verifyToken, likeMessage);
+
+// Delete message
+router.delete("/:messageId", verifyToken, deleteMessageController);
+
+// Edit message
+router.patch("/edit/:messageId", verifyToken, editMessageController);
+
+// ==================== UNREAD COUNT ROUTES ====================
+
+//  Get total unread message count (for HomeScreen badge)
 router.get("/unread/count", verifyToken, getUnreadMessageCount);
 
-// Chat list routes
-router.get("/user/getClientChatsList", verifyToken, getClientChatListController);
-router.get("/user/getVendorChats", verifyToken, getVendorChatListController);
-router.get("/client/previews", verifyToken, getClientChatPreviewsController);
-router.get("/vendor/previews", verifyToken, getVendorChatPreviewsController);
+//  Get unread messages grouped by room (for ChatListScreen)
+router.get("/client/unread-by-room", verifyToken, getUnreadMessagesByRoomController);
 
-// Message actions
-router.delete("/:messageId", verifyToken, deleteMessageController);
-router.patch("/edit/:messageId", verifyToken, editMessageController);
+//  Get unread count for specific room (optional)
+router.get("/room/:roomId/unread-count", verifyToken, getUnreadCountForRoomController);
+
+// ==================== CHAT LIST ROUTES ====================
+
+// Get client chat list
+router.get("/user/getClientChatsList", verifyToken, getClientChatListController);
+
+// Get vendor chat list
+router.get("/user/getVendorChats", verifyToken, getVendorChatListController);
+
+// Get client chat previews
+router.get("/client/previews", verifyToken, getClientChatPreviewsController);
+
+// Get vendor chat previews
+router.get("/vendor/previews", verifyToken, getVendorChatPreviewsController);
 
 export default router;
